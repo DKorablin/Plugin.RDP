@@ -59,9 +59,9 @@
 			this.gridSearch.DataGrid = null;
 			this.gridSearch.Dock = System.Windows.Forms.DockStyle.Bottom;
 			this.gridSearch.EnableFindCase = true;
-			this.gridSearch.EnableFindHilight = true;
+			this.gridSearch.EnableFindHighlight = true;
 			this.gridSearch.EnableFindPrevNext = true;
-			this.gridSearch.EnableSearchHilight = false;
+			this.gridSearch.EnableSearchHighlight = false;
 			this.gridSearch.ListView = null;
 			this.gridSearch.Location = new System.Drawing.Point(3, 155);
 			this.gridSearch.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);

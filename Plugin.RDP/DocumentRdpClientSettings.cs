@@ -12,13 +12,13 @@ namespace Plugin.RDP
 		public Int32? TreeId
 		{
 			get => this._treeId;
-			set => this.SetField(ref this._treeId, value, nameof(TreeId));
+			set => this.SetField(ref this._treeId, value, nameof(this.TreeId));
 		}
 
 		public Boolean IsConnected
 		{
 			get => this._isConnected;
-			set => this.SetField(ref this._isConnected, value, nameof(IsConnected));
+			set => this.SetField(ref this._isConnected, value, nameof(this.IsConnected));
 		}
 
 		#region INotifyPropertyChanged

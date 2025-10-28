@@ -24,7 +24,7 @@ namespace Plugin.RDP.UI
 		public void FillList(IList items, Int32 imageIndex)
 		{
 			List<ListViewItem> items2Add = new List<ListViewItem>();
-			String[] subItems = Array.ConvertAll<String, String>(new String[base.Columns.Count], delegate(String a) { return String.Empty; });
+			String[] subItems = Array.ConvertAll(new String[base.Columns.Count], a => String.Empty);
 			foreach(Object row in items)
 			{
 				ListViewItem item = new ListViewItem() { Tag = row, ImageIndex = imageIndex, StateImageIndex = imageIndex, };
@@ -39,7 +39,7 @@ namespace Plugin.RDP.UI
 				items2Add.Add(item);
 			}
 			if(base.InvokeRequired)
-				base.Invoke((MethodInvoker)delegate { base.Items.AddRange(items2Add.ToArray()); });
+				base.Invoke((System.Windows.Forms.MethodInvoker)delegate { base.Items.AddRange(items2Add.ToArray()); });
 			else
 				base.Items.AddRange(items2Add.ToArray());
 		}

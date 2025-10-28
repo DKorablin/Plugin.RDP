@@ -55,7 +55,7 @@ namespace Plugin.RDP
 					this._rdpClient.OnConnected += new EventHandler(RdpClient_OnConnected);
 					this._rdpClient.OnDisconnected += new AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEventHandler(RdpClient_OnDisconnected);
 
-					this._rdpClient.AdvancedSettings2.ContainerHandledFullScreen = 0;//Клиент сам открывается на весь экран
+					this._rdpClient.AdvancedSettings2.ContainerHandledFullScreen = 0;//The client automatically opens in full screen.
 					this._rdpClient.AdvancedSettings2.SmartSizing = false;
 
 					this._rdpClient.Control.Size = this.Size;
@@ -91,7 +91,7 @@ namespace Plugin.RDP
 			this.Plugin.Settings.XmlSettings.RdpClientStateChange += new EventHandler<RdpStateEventArgs>(XmlSettings_RdpClientConnected);
 			base.OnCreateControl();
 			_isControlCreated = true;
-			this.SetConnectinState(false);
+			this.SetConnectingState(false);
 		}
 
 		private void ParentForm_ClientSizeChanged(Object sender, EventArgs e)
@@ -162,7 +162,7 @@ namespace Plugin.RDP
 		private void Disconnect()
 		{
 			if(this.RdpClient.ConnectionStatus == RdpClient.ConnectionState.Connected)
-			{//TODO: Проверить на старых версиях RDP. Возможно надо полностью переходить на RequestClose
+			{//TODO: Test on older versions of RDP. Perhaps we need to switch completely to RequestClose.
 				if(this.RdpClient.Version.Major < 10)
 					this.RdpClient.MsRdpClient.Disconnect();
 				else
@@ -173,7 +173,7 @@ namespace Plugin.RDP
 		private void Connect()
 		{
 			if(this.RdpClient.ConnectionStatus == RDP.RdpClient.ConnectionState.Connecting || this.RdpClient.ConnectionStatus == RDP.RdpClient.ConnectionState.Connected)
-			{//Ошибка появляется в SAL.EnvDTE при попытке открыть окно с RDPClient'ом повторно
+			{//An error appears in SAL.EnvDTE when attempting to reopen the RDPClient window.
 				this.Plugin.Trace.TraceInformation("Attempt to call Connect to {1} Ctrl. Server: {2}", Environment.NewLine, this.RdpClient.ConnectionStatus, this.RdpClientRow.Server);
 				return;
 			}
@@ -305,14 +305,14 @@ namespace Plugin.RDP
 
 		private void RdpClient_OnConnected(Object sender, EventArgs e)
 		{
-			this.SetConnectinState(true);
+			this.SetConnectingState(true);
 			this.Plugin.Settings.XmlSettings.OnClientChangeState(this.Settings.TreeId.Value, RdpStateEventArgs.StateType.Connect);
 		}
 
 		System.Threading.Timer _xpHack;
 		private void RdpClient_OnDisconnected(Object sender, AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEvent e)
 		{
-			this.SetConnectinState(false);
+			this.SetConnectingState(false);
 			this.RdpClient.MsRdpClient.ConnectingText = "Disconnected";
 			if(e != null)
 			{//Event could be called from code
@@ -324,7 +324,7 @@ namespace Plugin.RDP
 
 			if(this.Plugin.Settings.CloseWindowAfterDisconnect)
 			{
-				if(this.RdpClient.Version.Build <= 6001)//Ошибка, если попытаться закрыть окно сразу после дисконнекта. (В Win7 такой проблемы нет)
+				if(this.RdpClient.Version.Build <= 6001)//An error occurs when attempting to close a window immediately after a disconnect. (This issue doesn't occur in Win7.)
 					this._xpHack = new System.Threading.Timer(CloseWindowByTimer, this, 1000, System.Threading.Timeout.Infinite);
 				else
 					this.Window.Close();
@@ -360,19 +360,19 @@ namespace Plugin.RDP
 			return result;
 		}
 
-		private void SetConnectinState(Boolean isConected)
+		private void SetConnectingState(Boolean isConnected)
 		{
-			this.Settings.IsConnected = isConected;
+			this.Settings.IsConnected = isConnected;
 			switch(this.TreeRow.RdpClientRow.IconIdI)
 			{
 			case 0:
-				if(isConected)
+				if(isConnected)
 					this.Window.SetTabPicture(Resources.iconClientConnected);
 				else
 					this.Window.SetTabPicture(Resources.iconClientDisconnected);
 				break;
 			case 1:
-				if(isConected)
+				if(isConnected)
 					this.Window.SetTabPicture(Resources.iconRDP2Connected);
 				else
 					this.Window.SetTabPicture(Resources.iconRDP2Disconnected);

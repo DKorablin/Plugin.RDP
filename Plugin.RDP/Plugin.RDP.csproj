@@ -1,0 +1,71 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFrameworks>net35;net8.0-windows</TargetFrameworks>
+		<UseWindowsForms>true</UseWindowsForms>
+		<OutputType>Library</OutputType>
+		<RootNamespace>Plugin.ReflectionSearch</RootNamespace>
+		<Deterministic>false</Deterministic>
+		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>False</GenerateDocumentationFile>
+		<CopyLocalLockFileAssemblies>True</CopyLocalLockFileAssemblies>
+		<NoWarn>CA1416</NoWarn>
+	</PropertyGroup>
+
+	<!--nuspec-->
+	<PropertyGroup>
+		<PackageId>AlphaOmega.SAL.Plugin.RDP</PackageId>
+		<Version>$(Version)</Version>
+		<Title>Remote Desktop Protocol Client. Original program: RDCMan</Title>
+		<Description>Microsoft engineers created awesome application to connect to multiple servers using RDP protocol — RDCMan. And I'm using this application for a quite some time until I accidentally saw a CLR exception. In that time I decided to update this program and add some custom features.</Description>
+		<Authors>Danila Korablin</Authors>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReadmeFile>docs\README.md</PackageReadmeFile>
+		<PackageIcon>docs\SAL.100.png</PackageIcon>
+		<RepositoryUrl>https://github.com/DKorablin/Plugin.RDP</RepositoryUrl>
+		<PackageTags>SAL;plugin;windows;RDP</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="\docs" />
+		<None Include="..\Images.Shared\SAL.100.png" Pack="true" PackagePath="\docs" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
+		<Optimize>true</Optimize>
+		<PublishSingleFile>true</PublishSingleFile>
+		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+		<AssemblyAttributes Include="AssemblyMetadata">
+			<_Parameter1>ProjectUrl</_Parameter1>
+			<_Parameter2>https://github.com/DKorablin/Plugin.RDP</_Parameter2>
+		</AssemblyAttributes>
+		<AssemblyAttributes Include="System.Runtime.Versioning.SupportedOSPlatform">
+			<_Parameter1>Windows</_Parameter1>
+		</AssemblyAttributes>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="SAL.Windows">
+			<ExcludeAssets>runtime</ExcludeAssets>
+		</PackageReference>
+		<PackageReference Include="Windows.AxMSTSCLib"/>
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net35'">
+		<Reference Include="System.Design"/>
+		<Reference Include="System.Data.DataSetExtensions"/>
+	</ItemGroup>
+	
+	<ItemGroup>
+	  <Compile Include="..\Bll.Shared\BllBase.cs" Link="Bll\BllBase.cs" />
+	  <Compile Include="..\WinForms.Shared\DefaultTextBox.cs" Link="UI\DefaultTextBox.cs" />
+	  <Compile Include="..\WinForms.Shared\DraggableTreeView.cs" Link="UI\DraggableTreeView.cs" />
+	  <Compile Include="..\WinForms.Shared\SearchGrid\SearchGrid.cs" Link="UI\SearchGrid.cs" />
+	  <Compile Include="..\WinForms.Shared\SearchGrid\SearchGrid.Designer.cs" Link="UI\SearchGrid.Designer.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Include="..\WinForms.Shared\SearchGrid\SearchGrid.resx" Link="UI\SearchGrid.resx" />
+	</ItemGroup>
+</Project>

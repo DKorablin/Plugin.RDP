@@ -4,7 +4,7 @@ namespace Plugin.RDP
 {
 	internal static class Constant
 	{
-		/// <summary>Наименование XML файла с настройками подключения к удалённым рабочим столам</summary>
+		/// <summary>Name of the XML file with remote desktop connection settings</summary>
 		public const String SettingsFileName = "RdpClient.xml";
 	}
 }

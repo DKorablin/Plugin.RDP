@@ -13,10 +13,10 @@ namespace Plugin.RDP.Bll
 	{
 		private readonly PluginWindows _plugin;
 
-		/// <summary>Событие возникающее при создании или изменении клиента</summary>
+		/// <summary>Event raised when a client is created or modified</summary>
 		public event EventHandler<TreeRowEventArgs> RdpClientUpdated;
 
-		/// <summary>Событие при изменении статуса подключения к клиенту</summary>
+		/// <summary>Event when the connection status to the client changes</summary>
 		public event EventHandler<RdpStateEventArgs> RdpClientStateChange;
 
 		public SettingsBll(PluginWindows plugin)
@@ -39,53 +39,53 @@ namespace Plugin.RDP.Bll
 			//base.Save();
 		}
 
-		/// <summary>Событие вызываемое когда произошло подключение к клиенту</summary>
-		/// <param name="clientName">Идентификатор клиента в дереве</param>
+		/// <summary>Event triggered when a connection to a client has been established</summary>
+		/// <param name="clientName">Client ID in the tree</param>
 		public void OnClientConnect(Int32 treeId)
 			=> this.OnClientChangeState(treeId, RdpStateEventArgs.StateType.Connect);
 
-		/// <summary>Событие вызываемое при разъединении клиента от сервера</summary>
-		/// <param name="treeId">Идентификатор клиента в дереве</param>
+		/// <summary>Event triggered when a client disconnects from the server</summary>
+		/// <param name="treeId">Client ID in the tree</param>
 		public void OnClientDisconnect(Int32 treeId)
 			=> this.OnClientChangeState(treeId, RdpStateEventArgs.StateType.Disconnect);
 
-		/// <summary>Событие для изменения или передачи нового статуса для окна</summary>
-		/// <param name="treeId">Идентификатор клиента в дереве</param>
-		/// <param name="state">Треуемая операция для выполнения в окне клиента</param>
+		/// <summary>Event for changing or sending a new status for a window</summary>
+		/// <param name="treeId">Client ID in the tree</param>
+		/// <param name="state">Requested operation to perform in the client window</param>
 		public void OnClientChangeState(Int32 treeId, RdpStateEventArgs.StateType state)
 			=> this.RdpClientStateChange?.Invoke(this, new RdpStateEventArgs(treeId, state));
 
-		/// <summary>Событие при обновлении или добавлении клиента</summary>
-		/// <param name="row">Ряд клиента, над которым произошло обновление</param>
+		/// <summary>Event when a client is updated or added</summary>
+		/// <param name="row">The client row that was updated</param>
 		protected void OnClientUpdated(SettingsDataSet.TreeRow row)
 			=> this.RdpClientUpdated?.Invoke(this, new TreeRowEventArgs(row));
 
-		/// <summary>Получить узел дерева по идентификатору</summary>
-		/// <param name="treeId">Идентификатор узла дерева</param>
-		/// <returns>Ряд описывающий узел дерева</returns>
+		/// <summary>Get a tree node by ID</summary>
+		/// <param name="treeId">Tree node ID</param>
+		/// <returns>A row describing the tree node</returns>
 		public SettingsDataSet.TreeRow GetTreeNode(Int32 treeId)
 			=> base.DataSet.Tree.FirstOrDefault(p => p.TreeID == treeId);
 
-		/// <summary>Получить все дочерние узлы относительно родителя</summary>
-		/// <param name="parentTreeId">Идентификатор родительского узла</param>
-		/// <returns>Массив дочерних узлов</returns>
+		/// <summary>Get all child nodes relative to the parent</summary>
+		/// <param name="parentTreeId">Parent node ID</param>
+		/// <returns>Array of child nodes</returns>
 		public SettingsDataSet.TreeRow[] GetTreeNodes(Int32? parentTreeId)
 			=> base.DataSet.Tree.Where(p => p.ParentTreeIDI == parentTreeId).OrderBy(p=>p.OrderId).ToArray();
 
-		/// <summary>Получить настройки подключения RDP клиента по идентификатору узла</summary>
-		/// <param name="treeId">Идентификатор узла по которому получить настройки подключения</param>
-		/// <returns>Ряд описывающий настройки RDP клиента</returns>
+		/// <summary>Get RDP client connection settings by node ID</summary>
+		/// <param name="treeId">Node ID for which to get connection settings</param>
+		/// <returns>A row describing the RDP client settings</returns>
 		public SettingsDataSet.RdpClientRow GetClientRow(Int32 treeId)
 			=> base.DataSet.RdpClient.FirstOrDefault(p => p.TreeID == treeId);
 
-		/// <summary>Получить список компьютеров которые уже есть в настройках</summary>
-		/// <returns>Массив компьютеров</returns>
+		/// <summary>Get a list of computers that are already in the settings</summary>
+		/// <returns>Array of computers</returns>
 		public String[] GetServerList()
 			=> base.DataSet.RdpClient.Select(p => p.Server).Distinct().ToArray();
 
-		/// <summary>Переместить узел по дереву в другую группу</summary>
-		/// <param name="treeId">Идентификатор узла для перемещения</param>
-		/// <param name="parentTreeId">Родительский идентификатор в который необходимо переместить узел</param>
+		/// <summary>Move a node in the tree to another group</summary>
+		/// <param name="treeId">The ID of the node to move</param>
+		/// <param name="parentTreeId">The parent ID to move the node to</param>
 		public void MoveNode(Int32 treeId, Int32? parentTreeId)
 		{
 			SettingsDataSet.TreeRow row = this.GetTreeNode(treeId);
@@ -99,7 +99,7 @@ namespace Plugin.RDP.Bll
 				if(parentRow.ElementType == ElementType.Client) throw new ArgumentException("Can't move to a client node");
 			}
 
-			if(row.ParentTreeIDI != parentTreeId)//Он уже в этом узле
+			if(row.ParentTreeIDI != parentTreeId)//He's already in this node
 			{
 				row.BeginEdit();
 				row.ParentTreeIDI = parentTreeId;
@@ -107,12 +107,12 @@ namespace Plugin.RDP.Bll
 			}
 		}
 
-		/// <summary>Изменить узел дерева</summary>
-		/// <param name="treeId">Идентификатор узла, если необходимо изменить. Или null, если узел необходимо добавить</param>
-		/// <param name="parentTreeId">Идентификатор родительского узла</param>
-		/// <param name="elementType">Тип добавляемого элемента</param>
-		/// <param name="name">Наименование добавляемого элемента</param>
-		/// <returns>Указатель на добавленный или изменённый код</returns>
+		/// <summary>Modify a tree node</summary>
+		/// <param name="treeId">The node ID, if needed, to modify. Or null if the node needs to be added.</param>
+		/// <param name="parentTreeId">The parent node ID.</param>
+		/// <param name="elementType">The type of element to add.</param>
+		/// <param name="name">The name of the element to add.</param>
+		/// <returns>A pointer to the added or modified code.</returns>
 		public SettingsDataSet.TreeRow ModifyTreeNode(Int32? treeId, Int32? parentTreeId, ElementType elementType, String name)
 		{
 			if(String.IsNullOrEmpty(name))
@@ -137,10 +137,10 @@ namespace Plugin.RDP.Bll
 			return row;
 		}
 
-		/// <summary>Изменить наименование узла в дереве</summary>
-		/// <param name="row">Ряд для изменения</param>
-		/// <param name="name">Наименование узла</param>
-		/// <returns>Смена узла прошла успешно</returns>
+		/// <summary>Change the name of a node in the tree</summary>
+		/// <param name="row">Row to change</param>
+		/// <param name="name">Node name</param>
+		/// <returns>Node change successful</returns>
 		public Boolean ModifyTreeNodeName(SettingsDataSet.TreeRow row, String name)
 		{
 			_ = row ?? throw new ArgumentNullException(nameof(row));
@@ -157,10 +157,10 @@ namespace Plugin.RDP.Bll
 			return result;
 		}
 
-		/// <summary>Изменить или добавить настройки клиента</summary>
-		/// <param name="treeRow">Ряд дерева настройки клиента которого необходимо изменить</param>
-		/// <param name="server">Наименование сервера</param>
-		/// <param name="userName">Логин клиента, который подключается к серверу</param>
+		/// <summary>Change or add client settings</summary>
+		/// <param name="treeRow">Tree row whose client settings need to be changed</param>
+		/// <param name="server">Server name</param>
+		/// <param name="userName">Login of the client connecting to the server</param>
 		public void ModifyClient(SettingsDataSet.TreeRow treeRow, RdpClientDlg dlg)
 		{
 			if(treeRow.ElementType != ElementType.Client)
@@ -188,8 +188,8 @@ namespace Plugin.RDP.Bll
 			this.OnClientUpdated(treeRow);
 		}
 
-		/// <summary>Удалить узел дерева со всеми дочерними узлами</summary>
-		/// <param name="row">Ряд дерева для удаления</param>
+		/// <summary>Delete a tree node and all its child nodes</summary>
+		/// <param name="row">The tree row to delete</param>
 		public void RemoveNode(SettingsDataSet.TreeRow row)
 		{
 			_ = row ?? throw new ArgumentNullException(nameof(row));
@@ -209,8 +209,8 @@ namespace Plugin.RDP.Bll
 			}
 		}
 
-		/// <summary>Удалить узел клиента и настройки клиента</summary>
-		/// <param name="treeRow">Ряд дерева для удаления</param>
+		/// <summary>Delete client node and client settings</summary>
+		/// <param name="treeRow">Tree row to delete</param>
 		private void RemoveClient(SettingsDataSet.TreeRow treeRow)
 		{
 			_ = treeRow ?? throw new ArgumentNullException(nameof(treeRow));
@@ -218,7 +218,7 @@ namespace Plugin.RDP.Bll
 			if(treeRow.ElementType == ElementType.Client)
 			{
 				SettingsDataSet.RdpClientRow clientRow = this.GetClientRow(treeRow.TreeID)
-					?? throw new ApplicationException($"Row with client ID {treeRow.TreeID} not found");
+					?? throw new ArgumentException($"Row with client ID {treeRow.TreeID} not found");
 
 				base.DataSet.RdpClient.RemoveRdpClientRow(clientRow);
 

@@ -60,7 +60,7 @@ namespace Plugin.RDP.UI
 				this.ImageIndex = this.SelectedImageIndex = TreeImageList.Folder;
 				break;
 			default:
-				throw new NotImplementedException(String.Format("Element with type {0} not implemented", type));
+				throw new NotImplementedException($"Element with type \"{type}\" not implemented");
 			}
 		}
 
