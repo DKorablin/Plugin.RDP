@@ -7,21 +7,21 @@ namespace Plugin.RDP.Bll
 	{
 		private String _desktopSize;
 
-		/// <summary>Развернуть на весь экран</summary>
+		/// <summary>Expand to full screen</summary>
 		public Boolean FullScreen
 		{
 			get => this._desktopSize == "1";
 			set => this._desktopSize = "1";
 		}
 
-		/// <summary>Не больше размера клиента</summary>
+		/// <summary>No more than the client's size</summary>
 		public Boolean SameAsClient
 		{
 			get => this._desktopSize == "0";
 			set => this._desktopSize = "0";
 		}
 
-		/// <summary>Размер экрана</summary>
+		/// <summary>Screen size</summary>
 		public Size Size
 		{
 			get

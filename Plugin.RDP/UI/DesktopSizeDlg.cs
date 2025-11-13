@@ -8,7 +8,7 @@ namespace Plugin.RDP.UI
 	{
 		public String CustomSize
 		{
-			get	=> String.Format("{0}x{1}", txtWidth.Text, txtHeight.Text);
+			get => $"{txtWidth.Text}x{txtHeight.Text}";
 			set
 			{
 				if(!String.IsNullOrEmpty(value))
@@ -22,7 +22,7 @@ namespace Plugin.RDP.UI
 
 		public DesktopSizeDlg(Object customSize)
 		{
-			InitializeComponent();
+			this.InitializeComponent();
 			if(customSize != null)
 				this.CustomSize = customSize.ToString();
 		}
@@ -32,12 +32,12 @@ namespace Plugin.RDP.UI
 			if(base.DialogResult == DialogResult.OK)
 			{
 				Boolean cancel = false;
-				if(!Int32.TryParse(txtWidth.Text, out Int32 dummy))
+				if(!Int32.TryParse(txtWidth.Text, out _))
 				{
 					error.SetError(txtWidth, "Invalid width");
 					cancel = true;
 				}
-				if(!Int32.TryParse(txtHeight.Text, out dummy))
+				if(!Int32.TryParse(txtHeight.Text, out _))
 				{
 					error.SetError(txtHeight, "Invalid height");
 					cancel = true;

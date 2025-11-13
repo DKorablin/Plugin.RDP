@@ -21,10 +21,10 @@ namespace Plugin.RDP.UI
 			this.QuerySessions();
 		}
 
-		/// <summary>Выйти текущим пользователем из удалённого сеанса</summary>
-		/// <param name="serverName">Наименование сервера</param>
-		/// <param name="userName">Логин подключённого клиента</param>
-		/// <returns>Результат выхода клиента из системы</returns>
+		/// <summary>Log out the current user from the remote session</summary>
+		/// <param name="serverName">Server name</param>
+		/// <param name="userName">Connected client login</param>
+		/// <returns>Client logout result</returns>
 		internal static Boolean LogOffUser(String serverName, String userName)
 		{
 			RemoteSessions sessions = new RemoteSessions(serverName);
@@ -35,13 +35,13 @@ namespace Plugin.RDP.UI
 				foreach(RemoteSessions.RemoteSessionInfo info in sessions.QuerySessions())
 					switch(info.State)
 					{
-					case Native.ConnectstateClass.Active:
-					case Native.ConnectstateClass.Connected:
+					case Native.ConnectStateClass.Active:
+					case Native.ConnectStateClass.Connected:
 						if(info.UserName == userName)
 						{
 							if(sessionId != -1)
 							{
-								MessageBox.Show("Multiple instances activated. Can't determine whitch session to LogOff", RemoteSessionsDlg.Caption, MessageBoxButtons.OK, MessageBoxIcon.Error);
+								MessageBox.Show("Multiple instances activated. Can't determine which session to LogOff", RemoteSessionsDlg.Caption, MessageBoxButtons.OK, MessageBoxIcon.Error);
 								return false;
 							}
 							sessionId = info.SessionId;
@@ -116,7 +116,7 @@ namespace Plugin.RDP.UI
 					foreach(ListViewItem item in lvSessions.SelectedItems)
 					{
 						RemoteSessions.RemoteSessionInfo info = (RemoteSessions.RemoteSessionInfo)item.Tag;
-						if(info.State != Native.ConnectstateClass.Disconnected)
+						if(info.State != Native.ConnectStateClass.Disconnected)
 						{
 							enableDisconnect = true;
 							break;
@@ -172,7 +172,7 @@ namespace Plugin.RDP.UI
 					lvSessions.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
 					lvSessions.EndUpdate();
 					tsslStatus.Text = "Ready";
-					base.Text = String.Format("{1:n0} - {1:n0} session{2}", RemoteSessionsDlg.Caption, lvSessions.Items.Count, lvSessions.Items.Count != 0 ? "s" : String.Empty);
+					base.Text = String.Format("{0:n0} - {0:n0} session{1}", lvSessions.Items.Count, lvSessions.Items.Count != 0 ? "s" : String.Empty);
 				}
 			}
 		}
@@ -208,7 +208,7 @@ namespace Plugin.RDP.UI
 			RemoteSessions.RemoteSessionInfo[] sessions = (RemoteSessions.RemoteSessionInfo[])e.Argument;
 
 			foreach(RemoteSessions.RemoteSessionInfo session in sessions)
-				if(session.State != Native.ConnectstateClass.Disconnected)
+				if(session.State != Native.ConnectStateClass.Disconnected)
 				{
 					tsslStatus.Text = "Disconnecting " + session.UserName;
 					this._sessions.DisconnectSession(session.SessionId);

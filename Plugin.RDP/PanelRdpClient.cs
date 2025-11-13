@@ -58,9 +58,9 @@ namespace Plugin.RDP
 
 		private void XmlSettings_RdpClientConnected(Object sender, RdpStateEventArgs e)
 		{
-			RdpClientTreeNode node = tvList.FindNode(e.TreeId);
-			if(node == null)
-				throw new ArgumentException(String.Format("Node {0:n0} not found", e.TreeId), "e.TreeId");
+			RdpClientTreeNode node = tvList.FindNode(e.TreeId)
+				?? throw new ArgumentException($"Node {e.TreeId:n0} not found", "e.TreeId");
+
 			node.IsConnected = e.State==RdpStateEventArgs.StateType.Connect;
 		}
 
@@ -147,12 +147,12 @@ namespace Plugin.RDP
 
 		private void tsbnDelete_Click(Object sender, EventArgs e)
 		{
-			SettingsDataSet.TreeRow row = (SettingsDataSet.TreeRow)tvList.SelectedNode.Tag;
+			SettingsDataSet.TreeRow row = tvList.SelectedNode.Tag;
 			String message;
 			switch(row.ElementType)
 			{
 			case ElementType.Client:
-				message = String.Format("Are you sure you want to remove client node {0}?", row.Name);
+				message = $"Are you sure you want to remove client node {row.Name}?";
 				break;
 			case ElementType.Tree:
 				message = String.Format("Are you sure you want to remove node {0} and all children{1}?", row.Name, tvList.SelectedNode.Nodes.Count == 0 ? String.Empty : "s");
@@ -161,7 +161,7 @@ namespace Plugin.RDP
 				throw new NotImplementedException();
 			}
 			if(MessageBox.Show(message, this.Window.Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-			{//Удаление узла из настроек
+			{//Removing a node from settings
 				this.Plugin.Settings.XmlSettings.RemoveNode(row);
 				this.Plugin.Settings.XmlSettings.Save();
 				tvList.SelectedNode.Remove();
@@ -171,9 +171,9 @@ namespace Plugin.RDP
 		private void tvList_AfterLabelEdit(Object sender, NodeLabelEditEventArgs e)
 		{
 			RdpClientTreeNode node = (RdpClientTreeNode)e.Node;
-			if(e.Label == null)//Отмена редактирования
+			if(e.Label == null)//Cancel editing
 			{
-				if(node.Tag == null)//Удаление узла, если пользователь отменил создание
+				if(node.Tag == null)//Deleting a node if the user canceled creation
 					node.Remove();
 				return;
 			}
@@ -195,16 +195,16 @@ namespace Plugin.RDP
 				} while(itNode.PrevNode != null);
 			}
 
-			if(node.Tag != null)//Изменение ранее созданного узла
+			if(node.Tag != null)//Modifying a previously created node
 				this.Plugin.Settings.XmlSettings.ModifyTreeNodeName(node.Tag, e.Label);
 			else
-			{//Добавление нового узла
+			{//Adding a new node
 				SettingsDataSet.TreeRow parentRow = node.Parent == null ? null : node.Parent.Tag;
 				switch(node.ElementType)
 				{
-				case ElementType.Client://Добавление нового клиента
+				case ElementType.Client://Adding a new client
 					throw new NotImplementedException();
-				case ElementType.Tree://Добавление нового узла в дереве
+				case ElementType.Tree://Adding a new node to the tree
 					{
 						SettingsDataSet.TreeRow newRow = this.Plugin.Settings.XmlSettings.ModifyTreeNode(null, parentRow == null ? (Int32?)null : parentRow.TreeID, ElementType.Tree, e.Label);
 						node.Tag = newRow;
@@ -212,7 +212,7 @@ namespace Plugin.RDP
 					}
 					break;
 				default:
-					throw new NotImplementedException(String.Format("Element with type {0} not implemented", node.ElementType));
+					throw new NotImplementedException($"Element with type {node.ElementType} not implemented");
 				}
 			}
 
@@ -280,7 +280,7 @@ namespace Plugin.RDP
 						cmsNode.Show(tvList, e.Location);
 						break;
 					default:
-						throw new NotImplementedException(String.Format("RMB action for element {0} not implemented", node.ElementType));
+						throw new NotImplementedException($"RMB action for element {node.ElementType} not implemented");
 					}
 				}
 			}
@@ -325,30 +325,30 @@ namespace Plugin.RDP
 		private void cmsClient_ItemClicked(Object sender, ToolStripItemClickedEventArgs e)
 		{
 			cmsClient.Visible = false;
-			SettingsDataSet.TreeRow row = (SettingsDataSet.TreeRow)tvList.SelectedNode.Tag;
+			SettingsDataSet.TreeRow row = tvList.SelectedNode.Tag;
 
 			if(e.ClickedItem == tsmiClientFocus)
 			{
 				this.Plugin.Settings.XmlSettings.OnClientChangeState(row.TreeID, RdpStateEventArgs.StateType.Focus);
 			} else if(e.ClickedItem == tsmiClientConnect)
-			{//Подключение клиента к серверу
+			{//Connecting a client to a server
 				if(row.ElementType == ElementType.Client)
 				{
-					IWindow window = this.Plugin.CreateWindow(typeof(DocumentRdpClient).ToString(),
+					_ = this.Plugin.CreateWindow(typeof(DocumentRdpClient).ToString(),
 						true,
 						new DocumentRdpClientSettings() { TreeId = row.TreeID });
 				} else
 					throw new InvalidOperationException();
 			} else if(e.ClickedItem == tsmiClientDisconnect)
-			{//Отключение клиента от сервера
+			{//Disconnecting the client from the server
 				if(MessageBox.Show($"Are you sure you want to disconnect from client {row.Name}?", this.Window.Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
 					this.Plugin.Settings.XmlSettings.OnClientChangeState(row.TreeID, RdpStateEventArgs.StateType.Disconnect);
 			} else if(e.ClickedItem == tsmiClientListSessions)
-			{//Отображение списка сессий к серверу
+			{//Displaying a list of sessions to the server
 				using(RemoteSessionsDlg dlg = new RemoteSessionsDlg(this.Plugin, row.RdpClientRow.Server))
 					dlg.ShowDialog();
 			} else if(e.ClickedItem == tsmiClientLogOff)
-			{//Выход клиента из сервера
+			{//Client exits the server
 				if(MessageBox.Show(String.Format("Are you sure you want to logOff from client {0}?", row.Name), this.Window.Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
 				{
 					SettingsDataSet.RdpClientRow clientRow = this.Plugin.Settings.XmlSettings.GetClientRow(row.TreeID);
@@ -356,7 +356,7 @@ namespace Plugin.RDP
 						this.Plugin.Settings.XmlSettings.OnClientChangeState(row.TreeID, RdpStateEventArgs.StateType.Disconnect);
 				}
 			} else if(e.ClickedItem == tsmiClientProperties)
-			{//Отображение свойств подключений к серверу
+			{//Displaying server connection properties
 				if(row.ElementType == ElementType.Client)
 					this.Plugin.InvokeModifyClientDlg(row);
 				else
@@ -373,7 +373,7 @@ namespace Plugin.RDP
 			else if(e.ClickedItem == tsmiNodeAddNode)
 				this.tsbnAdd_DropDownItemClicked(sender, new ToolStripItemClickedEventArgs(tsmiNodeAddNode));
 			else
-				throw new NotImplementedException(String.Format("Action for node {0} not implemented", e.ClickedItem));
+				throw new NotImplementedException($"Action for node {e.ClickedItem} not implemented");
 		}
 	}
 }

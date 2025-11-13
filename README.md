@@ -18,25 +18,23 @@ Remote Desktop plugin that extends classic RDCMan style workflow with modern sho
 Get the latest packaged release: https://github.com/DKorablin/Plugin.RDP/releases/latest
 
 ## Installation
-1. Download the release archive (.zip or .nupkg).
-2. Place the plugin assembly into the host application plugin directory (SAL / host supporting Plugin.RDP).
-3. Restart the host application; Plugin.RDP should appear in the plugin list.
+To install the RDP Plugin, follow these steps:
+1. Download the latest release from the [Releases](https://github.com/DKorablin/Plugin.RDP/releases)
+2. Extract the downloaded ZIP file to a desired location.
+3. Use the provided [Flatbed.Dialog (Lite)](https://dkorablin.github.io/Flatbed-Dialog-Lite) executable or download one of the supported host applications:
+	- [Flatbed.Dialog](https://dkorablin.github.io/Flatbed-Dialog)
+	- [Flatbed.MDI](https://dkorablin.github.io/Flatbed-MDI)
+	- [Flatbed.MDI (WPF)](https://dkorablin.github.io/Flatbed-MDI-Avalon)
 
 ## Usage
-- Create folders and clients inside the tree.
+- Open RDP Plugin from the host application's Plugins menu. Default location: Tools -> RDP Client
+- Create nodes and clients inside the tree.
 - Edit a client to specify server, credentials and options.
+- Connect to a client by double-clicking or using the context menu.
 - Use configured shortcut keys inside the remote session.
-- Enable multi-monitor if you want the session to span all displays.
 
 ## Configuration
-Settings are stored as an embedded XML blob. They are loaded on startup and saved after changes (see SettingsBll).
-
-## Building
-Requires .NET SDK supporting net8.0-windows and .NET Framework 3.5 targeting packs.
-
-Typical steps:
-- Restore NuGet packages
-- Build Plugin.RDP.csproj (Debug or Release)
+Settings are stored as an embedded XML blob. They are loaded on startup and saved after changes (see `SettingsBll`).
 
 ## Acknowledgements
 Inspired by Microsoft RDCMan. This project adds custom features and hot key flexibility.

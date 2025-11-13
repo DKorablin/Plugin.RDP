@@ -20,10 +20,10 @@ namespace Plugin.RDP
 
 		internal IHostWindows HostWindows { get; }
 
-		/// <summary>Настройки для взаимодействия из хоста</summary>
+		/// <summary>Settings for interaction from the host</summary>
 		Object IPluginSettings.Settings => this.Settings;
 
-		/// <summary>Настройки для взаимодействия из плагина</summary>
+		/// <summary>Settings for interaction from the plugin</summary>
 		public PluginSettings Settings
 		{
 			get
@@ -73,7 +73,7 @@ namespace Plugin.RDP
 				{
 					this.RdpClientMenu = menuTools.Create("RDP Client");
 					this.RdpClientMenu.Name = "Tools.RdpClient";
-					this.RdpClientMenu.Click += (sender, e) => { this.CreateWindow(typeof(PanelRdpClient).ToString(), true); };
+					this.RdpClientMenu.Click += (sender, e) => this.CreateWindow(typeof(PanelRdpClient).ToString(), true);
 					menuTools.Items.Add(this.RdpClientMenu);
 					return true;
 				}
@@ -94,8 +94,8 @@ namespace Plugin.RDP
 			return true;
 		}
 
-		/// <summary>Показать окно создания нового RDP клиента</summary>
-		/// <param name="parentRow">Родительский узел создаваемого клиента</param>
+		/// <summary>Show the window for creating a new RDP client</summary>
+		/// <param name="parentRow">Parent node of the client being created</param>
 		internal void InvokeCreateClientDlg(SettingsDataSet.TreeRow parentRow)
 		{
 			if(this._properties == null)
@@ -106,8 +106,8 @@ namespace Plugin.RDP
 			this._properties.Focus();
 		}
 
-		/// <summary>Показать окно изменений параметров RDP клиента</summary>
-		/// <param name="row">Показать окно изменений параметров клиента</param>
+		/// <summary>Show the RDP client settings change window</summary>
+		/// <param name="row">Show the client settings change window</param>
 		internal void InvokeModifyClientDlg(SettingsDataSet.TreeRow row)
 		{
 			if(this._properties == null)

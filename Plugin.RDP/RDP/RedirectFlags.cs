@@ -2,23 +2,23 @@
 
 namespace Plugin.RDP
 {
-	/// <summary>Флаги переадресации локальных ресурсов</summary>
+	/// <summary>Local resource redirection flags</summary>
 	[Flags]
 	public enum RedirectFlags
 	{
-		/// <summary>Нет переадресации</summary>
+		/// <summary>No redirection</summary>
 		None = 0x0,
-		/// <summary>Переадресовать локальные диски</summary>
+		/// <summary>Redirect local drives</summary>
 		Drives = 0x01,
-		/// <summary>Переадресовать порты</summary>
+		/// <summary>Forward ports</summary>
 		Ports = 0x02,
-		/// <summary>Переадресовать принтеры</summary>
+		/// <summary>Forward printers</summary>
 		Printers = 0x04,
-		/// <summary>Переадресовать смарт-карты</summary>
+		/// <summary>Forward smart cards</summary>
 		SmartCards = 0x08,
-		/// <summary>Переадресовать буфер обмена</summary>
+		/// <summary>Forward the clipboard</summary>
 		Clipboard = 0x10,
-		/// <summary>Переадресовать устройства Point of Service</summary>
+		/// <summary>Forward Point of Service devices</summary>
 		PointOfService = 0x20,
 	}
 }

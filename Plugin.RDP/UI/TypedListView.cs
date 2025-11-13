@@ -13,7 +13,7 @@ namespace Plugin.RDP.UI
 			base.Items.Clear();
 			base.Columns.Clear();
 
-			if(items!=null && items.Count > 0)
+			if(items?.Count > 0)
 			{
 				Type objectType = items[0].GetType();
 				foreach(PropertyInfo property in objectType.GetProperties())

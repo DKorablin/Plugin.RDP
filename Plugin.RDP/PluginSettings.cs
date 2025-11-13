@@ -31,11 +31,11 @@ namespace Plugin.RDP
 		private Keys _previousSession = Keys.Control | Keys.Alt | Keys.Left;
 		private Keys _selectSession = Keys.Control | Keys.Alt | Keys.Right;
 
-		/// <summary>Настройки RDP клиентов</summary>
+		/// <summary>RDP client settings</summary>
 		internal SettingsBll XmlSettings
 			=> this._xmlSettings ?? (this._xmlSettings = new SettingsBll(this._plugin));
 
-		//TODO: Пока только заглушка
+		//TODO: So far it's just a stub
 		internal Boolean IsThumbnail
 		{
 			get => this._isThumbnail;
@@ -44,7 +44,7 @@ namespace Plugin.RDP
 
 		[Category("Appearance")]
 		[DisplayName("Use multiple monitors")]
-		[Description("Открывать подключение к удалённому рабочему столу на всех мониторах")]
+		[Description("Open Remote Desktop Connection on all monitors")]
 		[DefaultValue(false)]
 		public Boolean UseMultipleMonitors
 		{
@@ -54,7 +54,7 @@ namespace Plugin.RDP
 
 		[Category("Appearance")]
 		[DisplayName("Close after disconnect")]
-		[Description("Закрыть окно подключения после разъединения с удалённым сервером")]
+		[Description("Close the connection window after disconnecting from the remote server")]
 		[DefaultValue(true)]
 		public Boolean CloseWindowAfterDisconnect
 		{

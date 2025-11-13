@@ -117,7 +117,7 @@ namespace Plugin.RDP.RDP
 		private PluginWindows _plugin;
 		public static Int32 MaxDesktopHeight;
 		public static Int32 MaxDesktopWidth;
-		private static Object _initializeLock = new Object();
+		private static readonly Object _initializeLock = new Object();
 		private static Boolean _initialized = false;
 		private static RdpClientVersion UseClientVersion;
 		public MethodInvoker GotFocus;
@@ -347,7 +347,7 @@ namespace Plugin.RDP.RDP
 				case RdpClient.AudioRedirectionMode.NoSound:
 					return "Do not play";
 				default:
-					throw new Exception("Unexpected AudioRedirectionMode:" + mode.ToString());
+					throw new InvalidOperationException("Unexpected AudioRedirectionMode:" + mode.ToString());
 			}
 		}
 
@@ -365,7 +365,7 @@ namespace Plugin.RDP.RDP
 				case RdpClient.AudioRedirectionQuality.Medium:
 					return "Medium quality";
 				default:
-					throw new Exception("Unexpected AudioRedirectionQuality:" + mode.ToString());
+					throw new InvalidOperationException("Unexpected AudioRedirectionQuality:" + mode.ToString());
 			}
 		}
 
@@ -381,7 +381,7 @@ namespace Plugin.RDP.RDP
 				case RdpClient.AudioCaptureRedirectionMode.Record:
 					return "Record from this computer";
 				default:
-					throw new Exception("Unexpected AudioCaptureRedirectionMode:" + mode.ToString());
+					throw new InvalidOperationException("Unexpected AudioCaptureRedirectionMode:" + mode.ToString());
 			}
 		}
 
@@ -399,7 +399,7 @@ namespace Plugin.RDP.RDP
 				case RdpClient.KeyboardHookMode.FullScreen:
 					return "In full screen mode only";
 				default:
-					throw new Exception("Unexpected KeyboardHookMode:" + mode.ToString());
+					throw new InvalidOperationException("Unexpected KeyboardHookMode:" + mode.ToString());
 			}
 		}
 
@@ -429,7 +429,7 @@ namespace Plugin.RDP.RDP
 				return "Do not use a Gateway server";
 			if(mode == RdpClient.GatewayUsageMethod.NoneDetect)
 				return "Automatically detect Gateway";
-			throw new Exception("Unexpected GatewayUsageMethod:" + mode.ToString());
+			throw new InvalidOperationException("Unexpected GatewayUsageMethod:" + mode.ToString());
 		}
 
 		public static RdpClient.GatewayUsageMethod GatewayUsageMethodFromString(String text)
@@ -446,7 +446,7 @@ namespace Plugin.RDP.RDP
 				case RdpClient.AuthenticationLevel.Warn:
 					return "Warn if authentication fails";
 				default:
-					throw new Exception("Unexpected AuthenticationLevel:" + mode.ToString());
+					throw new InvalidOperationException("Unexpected AuthenticationLevel:" + mode.ToString());
 			}
 		}
 
@@ -467,7 +467,6 @@ namespace Plugin.RDP.RDP
 			case RdpClientVersion.Version6:
 				this._rdpClient6 = new RdpClient6(this, form);
 				break;
-			case RdpClientVersion.Version5:
 			default:
 				this._rdpClient5 = new RdpClient5(this, form);
 				break;

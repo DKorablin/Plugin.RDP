@@ -3,9 +3,9 @@ using System.Runtime.InteropServices;
 
 namespace Plugin.RDP
 {
-	public static class Native
+	internal static class Native
 	{
-		public enum ConnectstateClass
+		public enum ConnectStateClass
 		{
 			Active,
 			Connected,
@@ -61,14 +61,14 @@ namespace Plugin.RDP
 			/// <summary>Pointer to a null-terminated string that contains the WinStation name of this session. The WinStation name is a name that Windows associates with the session, for example, "services", "console", or "RDP-Tcp#0".</summary>
 			[MarshalAs(UnmanagedType.LPWStr)]
 			public String WinStationName;
-			/// <summary>A value from the ConnectstateClass enumeration type that indicates the session's current connection state.</summary>
-			public Native.ConnectstateClass State;
+			/// <summary>A value from the ConnectStateClass enumeration type that indicates the session's current connection state.</summary>
+			public Native.ConnectStateClass State;
 		}
 
 		/// <summary>Opens a handle to the specified Remote Desktop Session Host (RD Session Host) server.</summary>
 		/// <param name="serverName">Pointer to a null-terminated string specifying the NetBIOS name of the RD Session Host server.</param>
 		/// <remarks>
-		/// When you have finished using the handle returned by <see cref="M:WTSOpenServer"/>, release it by calling the <see cref="M:WTSCloseServer"/> function.
+		/// When you have finished using the handle returned by <see cref="OpenServer"/>, release it by calling the <see cref="CloseServer"/> function.
 		/// You do not need to open a handle for operations performed on the RD Session Host server on which your application is running. Use the constant WTS_CURRENT_SERVER_HANDLE instead.
 		/// </remarks>
 		/// <returns>
@@ -80,18 +80,18 @@ namespace Plugin.RDP
 
 		/// <summary>Closes an open handle to a Remote Desktop Session Host (RD Session Host) server.</summary>
 		/// <remarks>
-		/// Call the WTSCloseServer function as part of your program's clean-up routine to close all the server handles opened by calls to the <see cref="M:WTSOpenServer"/> or <see cref="M:WTSOpenServerEx"/> function.
+		/// Call the WTSCloseServer function as part of your program's clean-up routine to close all the server handles opened by calls to the <see cref="OpenServer"/> or <see cref="M:WTSOpenServerEx"/> function.
 		/// After the handle has been closed, it cannot be used with any other WTS APIs.
 		/// </remarks>
 		/// <param name="hServer">
-		/// A handle to an RD Session Host server opened by a call to the <see cref="M:WTSOpenServer"/> or <see cref="M:WTSOpenServerEx"/> function.
+		/// A handle to an RD Session Host server opened by a call to the <see cref="OpenServer"/> or <see cref="M:WTSOpenServerEx"/> function.
 		/// Do not pass WTS_CURRENT_SERVER_HANDLE for this parameter.
 		/// </param>
 		[DllImport("wtsapi32.dll", EntryPoint = "WTSCloseServer")]
 		public static extern void CloseServer(IntPtr hServer);
 
 		/// <summary>Retrieves a list of sessions on a specified Remote Desktop Session Host (RD Session Host) server.</summary>
-		/// <param name="hServer">A handle to an RD Session Host server. Specify a handle opened by the <see cref="M:WTSOpenServer"/> or <see cref="M:WTSOpenServerEx"/> function, or specify WTS_CURRENT_SERVER_HANDLE to indicate the RD Session Host server on which your application is running.</param>
+		/// <param name="hServer">A handle to an RD Session Host server. Specify a handle opened by the <see cref="OpenServer"/> or <see cref="M:WTSOpenServerEx"/> function, or specify WTS_CURRENT_SERVER_HANDLE to indicate the RD Session Host server on which your application is running.</param>
 		/// <param name="reserved">This parameter is reserved. It must be zero.</param>
 		/// <param name="version">The version of the enumeration request. This parameter must be 1.</param>
 		/// <param name="pSessionInfo">

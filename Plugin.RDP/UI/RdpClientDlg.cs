@@ -278,7 +278,7 @@ namespace Plugin.RDP.UI
 				{
 					rbSizeCustom.Checked = true;
 					rbSizeCustom.Tag = value.ToString();
-					rbSizeCustom.Text = String.Format("Custom: {0}", value.ToString());
+					rbSizeCustom.Text = $"Custom: {value}";
 				}
 			}
 		}
@@ -421,7 +421,7 @@ namespace Plugin.RDP.UI
 
 		public RdpClientDlg(PluginWindows plugin)
 		{
-			InitializeComponent();
+			this.InitializeComponent();
 			
 			this._plugin = plugin;
 			txtDomain.DefaultText = Environment.UserDomainName;
@@ -432,7 +432,7 @@ namespace Plugin.RDP.UI
 
 		public void ToggleNewClientRow(SettingsDataSet.TreeRow parentRow)
 		{
-			this.RefreshControls(null, parentRow);//Ставим значения по умолчанию и показываем/скрываем элементы управления
+			this.RefreshControls(null, parentRow);//Set default values ​​and show/hide controls
 
 			this.SetControlValues(null);
 
@@ -443,7 +443,7 @@ namespace Plugin.RDP.UI
 
 		public void ToggleRdpClientRow(SettingsDataSet.TreeRow row)
 		{
-			this.RefreshControls(row, null);//Ставим значения по умолчанию и показываем/скрываем элементы управления
+			this.RefreshControls(row, null);//Set default values ​​and show/hide controls
 
 			this.ClientName = this._row.Name;
 			this.SetControlValues(this.ClientRow);
@@ -472,15 +472,15 @@ namespace Plugin.RDP.UI
 				}
 		}
 
-		/// <summary>Обновить элементы управления, скрыть или показать нужные элемнты</summary>
-		/// <param name="row">Ряд для редактирования</param>
-		/// <param name="parentRow">Родительский ряд, для которого создать клиента</param>
+		/// <summary>Update controls, hide or show desired elements</summary>
+		/// <param name="row">Row to edit</param>
+		/// <param name="parentRow">Parent row for which to create a client</param>
 		private void RefreshControls(SettingsDataSet.TreeRow row, SettingsDataSet.TreeRow parentRow)
 		{
 			if(row != null && parentRow != null)
 				throw new InvalidOperationException();
 			else if(parentRow != null && parentRow.ElementType == ElementType.Client)
-				throw new InvalidOperationException(String.Format("Client Id: {0}. Client row can't be parent node for another client", parentRow.TreeID));
+				throw new InvalidOperationException($"Client Id: {parentRow.TreeID}. Client row can't be parent node for another client");
 
 			tabMain.Visible = tsbnSave.Enabled = row == null || row.ElementType == ElementType.Client;
 
@@ -614,7 +614,7 @@ namespace Plugin.RDP.UI
 					if(dlg.ShowDialog() == DialogResult.OK)
 					{
 						rbSizeCustom.Tag = dlg.CustomSize;
-						rbSizeCustom.Text = String.Format("Custom: {0}", dlg.CustomSize);
+						rbSizeCustom.Text = $"Custom: {dlg.CustomSize}";
 					} else if(rbSizeCustom.Tag == null)
 					{
 						this.DesktopSizeI = new DesktopSizeParser() { SameAsClient = true, };

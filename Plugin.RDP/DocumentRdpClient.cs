@@ -26,7 +26,7 @@ namespace Plugin.RDP
 				if(this._settings == null)
 				{
 					this._settings = new DocumentRdpClientSettings();
-					this._settings.PropertyChanged += new System.ComponentModel.PropertyChangedEventHandler(Settings_PropertyChanged);
+					this._settings.PropertyChanged += new System.ComponentModel.PropertyChangedEventHandler(this.Settings_PropertyChanged);
 				}
 				return this._settings;
 			}
@@ -52,8 +52,8 @@ namespace Plugin.RDP
 					RdpClient.Initialize(this.Plugin, this);
 					this._rdpClient = RdpClient.AllocClient(this.Plugin, this);
 
-					this._rdpClient.OnConnected += new EventHandler(RdpClient_OnConnected);
-					this._rdpClient.OnDisconnected += new AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEventHandler(RdpClient_OnDisconnected);
+					this._rdpClient.OnConnected += new EventHandler(this.RdpClient_OnConnected);
+					this._rdpClient.OnDisconnected += new AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEventHandler(this.RdpClient_OnDisconnected);
 
 					this._rdpClient.AdvancedSettings2.ContainerHandledFullScreen = 0;//The client automatically opens in full screen.
 					this._rdpClient.AdvancedSettings2.SmartSizing = false;
@@ -69,7 +69,7 @@ namespace Plugin.RDP
 		private IWindow Window => (IWindow)base.Parent;
 
 		public DocumentRdpClient()
-			=> InitializeComponent();
+			=> this.InitializeComponent();
 
 		protected override void OnCreateControl()
 		{
@@ -84,11 +84,13 @@ namespace Plugin.RDP
 			this.Window.Caption = $"{this.TreeRow.Name} - Terminal Client";
 			this.Window.SetDockAreas(DockAreas.Document | DockAreas.Float);
 
-			this.Window.Shown += new EventHandler(Window_Shown);
-			this.Window.Closed += new EventHandler(Window_Closed);
-			_lastWindowState = this.ParentForm.WindowState;
-			this.ParentForm.ClientSizeChanged += ParentForm_ClientSizeChanged;
-			this.Plugin.Settings.XmlSettings.RdpClientStateChange += new EventHandler<RdpStateEventArgs>(XmlSettings_RdpClientConnected);
+			this.Window.Shown += new EventHandler(this.Window_Shown);
+			this.Window.Closed += new EventHandler(this.Window_Closed);
+			_lastWindowState = this.ParentForm?.WindowState ?? FormWindowState.Normal;//Exception if ParentForm is null
+			if(this.ParentForm != null)
+				this.ParentForm.ClientSizeChanged += this.ParentForm_ClientSizeChanged;
+
+			this.Plugin.Settings.XmlSettings.RdpClientStateChange += new EventHandler<RdpStateEventArgs>(this.XmlSettings_RdpClientConnected);
 			base.OnCreateControl();
 			_isControlCreated = true;
 			this.SetConnectingState(false);
@@ -128,10 +130,10 @@ namespace Plugin.RDP
 
 		private void Window_Closed(Object sender, EventArgs e)
 		{
-			this.Plugin.Settings.XmlSettings.RdpClientStateChange -= new EventHandler<RdpStateEventArgs>(XmlSettings_RdpClientConnected);
+			this.Plugin.Settings.XmlSettings.RdpClientStateChange -= new EventHandler<RdpStateEventArgs>(this.XmlSettings_RdpClientConnected);
 
-			this.RdpClient.OnConnected -= new EventHandler(RdpClient_OnConnected);
-			this.RdpClient.OnDisconnected -= new AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEventHandler(RdpClient_OnDisconnected);
+			this.RdpClient.OnConnected -= new EventHandler(this.RdpClient_OnConnected);
+			this.RdpClient.OnDisconnected -= new AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEventHandler(this.RdpClient_OnDisconnected);
 
 			if(this.RdpClient.ConnectionStatus == RdpClient.ConnectionState.Connected)
 			{
@@ -174,7 +176,7 @@ namespace Plugin.RDP
 		{
 			if(this.RdpClient.ConnectionStatus == RDP.RdpClient.ConnectionState.Connecting || this.RdpClient.ConnectionStatus == RDP.RdpClient.ConnectionState.Connected)
 			{//An error appears in SAL.EnvDTE when attempting to reopen the RDPClient window.
-				this.Plugin.Trace.TraceInformation("Attempt to call Connect to {1} Ctrl. Server: {2}", Environment.NewLine, this.RdpClient.ConnectionStatus, this.RdpClientRow.Server);
+				this.Plugin.Trace.TraceInformation("Attempt to call Connect to {0} Ctrl. Server: {1}", this.RdpClient.ConnectionStatus, this.RdpClientRow.Server);
 				return;
 			}
 

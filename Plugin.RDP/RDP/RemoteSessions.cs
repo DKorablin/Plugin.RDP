@@ -5,14 +5,14 @@ using System.ComponentModel;
 
 namespace Plugin.RDP.RDP
 {
-	public class RemoteSessions
+	internal class RemoteSessions
 	{
 		public class RemoteSessionInfo
 		{
 			public String ClientName { get; set; }
 			public String DomainName { get; set; }
 			public Int32 SessionId { get; set; }
-			public Native.ConnectstateClass State { get; set; }
+			public Native.ConnectStateClass State { get; set; }
 			public String UserName { get; set; }
 		}
 
