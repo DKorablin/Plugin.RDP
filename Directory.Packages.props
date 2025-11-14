@@ -4,7 +4,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageVersion Include="SAL.Windows" Version="1.2.11" />
-		<PackageVersion Include="Windows.AxMSTSCLib" Version="1.0.2"/>
+		<PackageVersion Include="Windows.AxMSTSCLib" Version="1.0.3"/>
 		<!--Analyzers-->
 		<GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.8.0.113526">
 			<PrivateAssets>All</PrivateAssets>

@@ -3,10 +3,13 @@ http://msdn.microsoft.com/en-us/library/ms861803.aspx			Terminal Services Client
 http://support.microsoft.com/kb/885187					RDP file format
 
 Recompile and sign:
-ildasm /all /out=AxMSTSCLib.il AxMSTSCLib.dll
-ilasm /dll /key="C:\Visual Studio Projects\C#\AlphaOmega (NoPwd).snk" AxMSTSCLib.il
+"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\ildasm" /all /out="MSTSCLib.il" "Interop.MSTSCLib.dll"
+"C:\Windows\Microsoft.NET\Framework\v4.0.30319\ilasm" /dll /key="C:\Visual Studio Projects\C#\AlphaOmega (NoPwd).snk" "MSTSCLib.il"
+
+"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\ildasm" /all /out="AxMSTSCLib.il" "AxInterop.MSTSCLib.dll"
+"C:\Windows\Microsoft.NET\Framework\v4.0.30319\ilasm" /dll /key="C:\Visual Studio Projects\C#\AlphaOmega (NoPwd).snk" "AxMSTSCLib.il"
 
 Nuget deploy:
 nuget pack Windows.AxMSTSCLib.nuspec
 
-nuget push Windows.AxMSTSCLib.1.0.2.nupkg -ApiKey ghp_c87uUQnpTg8PDkvjjQ2xgahzDathEg1sfNtj -src https://nuget.pkg.github.com/DKorablin/index.json
+nuget push Windows.AxMSTSCLib.1.0.3.nupkg -ApiKey ghp_c87uUQnpTg8PDkvjjQ2xgahzDathEg1sfNtj -src https://nuget.pkg.github.com/DKorablin/index.json

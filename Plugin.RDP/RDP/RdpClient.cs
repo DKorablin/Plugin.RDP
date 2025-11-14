@@ -10,12 +10,18 @@ namespace Plugin.RDP.RDP
 {
 	public class RdpClient
 	{
+		/// <summary>Indicates the state of the connection bar</summary>
 		public enum ConnectionBarState
 		{
+			/// <summary>The connection bar is set to auto-hide.</summary>
 			AutoHide,
+			/// <summary>The connection bar is pinned.</summary>
 			Pinned,
+			/// <summary>The connection bar is off.</summary>
 			Off
 		}
+
+		/// <summary>Indicates how audio redirection is applied</summary>
 		public enum AudioRedirectionMode : UInt32
 		{
 			/// <summary>Audio redirection is enabled and the option for redirection is "Bring to this computer". This is the default mode.</summary>
@@ -29,17 +35,28 @@ namespace Plugin.RDP.RDP
 			/// <summary>Audio redirection is enabled and the mode is "Do not play".</summary>
 			NoSound = 2,
 		}
+
+		/// <summary>Indicates the quality of audio redirection</summary>
 		public enum AudioRedirectionQuality
 		{
+			/// <summary>Audio quality is dynamically adjusted based on network performance. This is the default mode.</summary>
 			Dynamic,
+			/// <summary>High-quality audio redirection.</summary>
 			High,
-			Medium
+			/// <summary>Medium-quality audio redirection.</summary>
+			Medium,
 		}
+
+		/// <summary>Indicates how audio capture redirection is applied</summary>
 		public enum AudioCaptureRedirectionMode
 		{
+			/// <summary>Audio capture redirection is disabled.</summary>
 			DoNotRecord,
+			/// <summary>Audio capture redirection is enabled.</summary>
 			Record
 		}
+
+		/// <summary>Indicates how key combinations are applied</summary>
 		public enum KeyboardHookMode
 		{
 			/// <summary>Apply key combinations only locally at the client computer.</summary>
@@ -64,6 +81,7 @@ namespace Plugin.RDP.RDP
 			Reconnecting = 3,
 		}
 
+		/// <summary>Indicates how the Remote Desktop Gateway server is used</summary>
 		public enum GatewayUsageMethod
 		{
 			NoneDirect,
@@ -72,12 +90,16 @@ namespace Plugin.RDP.RDP
 			Default,
 			NoneDetect
 		}
+
+		/// <summary>Indicates the logon method for the Remote Desktop Gateway server</summary>
 		public enum GatewayLogonMethod : UInt32
 		{
 			NTLM,
 			SmartCard,
 			Any = 4
 		}
+
+		/// <summary>Indicates the authentication level</summary>
 		public enum AuthenticationLevel
 		{
 			None,
@@ -85,6 +107,7 @@ namespace Plugin.RDP.RDP
 			Warn
 		}
 
+		/// <summary>RDP Client versions</summary>
 		public enum RdpClientVersion
 		{
 			Version5 = 5,
@@ -484,6 +507,24 @@ namespace Plugin.RDP.RDP
 			this.MsRdpClient.DesktopWidth = Math.Min(RdpClient.MaxDesktopWidth, size.Width);
 		}
 
+		public void UpdateSessionDisplaySettings(Size size)
+		{
+			if(this.ConnectionStatus != ConnectionState.Connected || this.MsRdpClient10 == null)
+				return;
+
+			UInt32 width = (UInt32)Math.Min(RdpClient.MaxDesktopWidth, size.Width);
+			UInt32 height = (UInt32)Math.Min(RdpClient.MaxDesktopHeight, size.Height);
+			this.MsRdpClient.DesktopWidth = (Int32)width;
+			this.MsRdpClient.DesktopHeight = (Int32)height;
+
+			// width / height - Logical display dimensions
+			// physicalWidth / physicalHeight - Physical dimensions in millimeters(for DPI calculation)
+			// orientation - Display orientation(0 = landscape, 90 / 180 / 270 for rotations)
+			// desktopScaleFactor - Scaling factor for desktop(100 % = 1, 125 % = 1.25, etc.)
+			// deviceScaleFactor - Device pixel ratio
+			this.MsRdpClient10.UpdateSessionDisplaySettings(width, height, width, height, 0, 1, 1);
+		}
+
 		public static void Initialize(PluginWindows plugin, UserControl form)
 		{
 			if(!RdpClient._initialized)
@@ -578,6 +619,10 @@ namespace Plugin.RDP.RDP
 		{
 			this.AdvancedSettings2.SmartSizing = true;
 			this.MsRdpClient.FullScreen = false;
+
+			// Force redraw after leaving full screen
+			this.Control.Refresh();
+			this.Control.Update();
 		}
 
 		public void SetText()

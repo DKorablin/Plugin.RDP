@@ -61,7 +61,16 @@ namespace Plugin.RDP
 			RdpClientTreeNode node = tvList.FindNode(e.TreeId)
 				?? throw new ArgumentException($"Node {e.TreeId:n0} not found", "e.TreeId");
 
-			node.IsConnected = e.State==RdpStateEventArgs.StateType.Connect;
+			switch(e.State)
+			{
+			case RdpStateEventArgs.StateType.Connect:
+			case RdpStateEventArgs.StateType.Focus:
+				node.IsConnected = true;
+				break;
+			default:
+				node.IsConnected = false;
+				break;
+			}
 		}
 
 		private void Window_Closed(Object sender, EventArgs e)
@@ -333,11 +342,8 @@ namespace Plugin.RDP
 			} else if(e.ClickedItem == tsmiClientConnect)
 			{//Connecting a client to a server
 				if(row.ElementType == ElementType.Client)
-				{
-					_ = this.Plugin.CreateWindow(typeof(DocumentRdpClient).ToString(),
-						true,
-						new DocumentRdpClientSettings() { TreeId = row.TreeID });
-				} else
+					_ = this.Plugin.CreateWindow<DocumentRdpClient,DocumentRdpClientSettings>(new DocumentRdpClientSettings() { TreeId = row.TreeID });
+				else
 					throw new InvalidOperationException();
 			} else if(e.ClickedItem == tsmiClientDisconnect)
 			{//Disconnecting the client from the server

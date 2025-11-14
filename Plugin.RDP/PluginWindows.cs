@@ -129,6 +129,14 @@ namespace Plugin.RDP
 				? this.HostWindows.Windows.CreateWindow(this, typeName, searchForOpened, state, args)
 				: null;
 
+		internal IWindow CreateWindow<T, A>(A args) where T : class, IPluginSettings<A> where A : class
+		{
+			String type = typeof(T).ToString();
+			return this.DocumentTypes.TryGetValue(type, out DockState state)
+				? this.HostWindows.Windows.CreateWindow(this, type, true, state, args)
+				: null;
+		}
+
 		private static TraceSource CreateTraceSource<T>(String name = null) where T : IPlugin
 		{
 			TraceSource result = new TraceSource(typeof(T).Assembly.GetName().Name + name);

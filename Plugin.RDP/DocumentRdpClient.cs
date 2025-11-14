@@ -54,6 +54,7 @@ namespace Plugin.RDP
 
 					this._rdpClient.OnConnected += new EventHandler(this.RdpClient_OnConnected);
 					this._rdpClient.OnDisconnected += new AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEventHandler(this.RdpClient_OnDisconnected);
+					this._rdpClient.OnRequestLeaveFullScreen += new EventHandler(this.RdpClient_OnRequestLeaveFullScreen);
 
 					this._rdpClient.AdvancedSettings2.ContainerHandledFullScreen = 0;//The client automatically opens in full screen.
 					this._rdpClient.AdvancedSettings2.SmartSizing = false;
@@ -112,6 +113,16 @@ namespace Plugin.RDP
 			}
 		}
 
+		protected override void OnResize(EventArgs e)
+		{
+			base.OnResize(e);
+
+			// Only resize if connected and using "SameAsClient" desktop size mode
+			if(this.Window != null && this.RdpClient?.ConnectionStatus == RDP.RdpClient.ConnectionState.Connected &&
+				this.RdpClientRow.DesktopSizeI.SameAsClient)
+				this.RdpClient.UpdateSessionDisplaySettings(this.Size);
+		}
+
 		private void Settings_PropertyChanged(Object sender, System.ComponentModel.PropertyChangedEventArgs e)
 		{
 			switch(e.PropertyName)
@@ -134,6 +145,7 @@ namespace Plugin.RDP
 
 			this.RdpClient.OnConnected -= new EventHandler(this.RdpClient_OnConnected);
 			this.RdpClient.OnDisconnected -= new AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEventHandler(this.RdpClient_OnDisconnected);
+			this.RdpClient.OnRequestLeaveFullScreen -= new EventHandler(this.RdpClient_OnRequestLeaveFullScreen);
 
 			if(this.RdpClient.ConnectionStatus == RdpClient.ConnectionState.Connected)
 			{
@@ -333,6 +345,20 @@ namespace Plugin.RDP
 			}
 		}
 
+		private void RdpClient_OnRequestLeaveFullScreen(Object sender, EventArgs e)
+		{
+			this.Plugin.Trace.TraceEvent(TraceEventType.Verbose, 1, "RDP requesting to leave full screen for: {0}", this.RdpClientRow.Server);
+
+			// Force control to refresh and resize
+			this.RdpClient.Control.Refresh();
+			this.RdpClient.Control.Size = this.Size;
+			this.RdpClient.Control.Invalidate();
+
+			// Ensure parent form state is tracked correctly
+			if(this.ParentForm != null)
+				_lastWindowState = this.ParentForm.WindowState;
+		}
+
 		private static void CloseWindowByTimer(Object pThis)
 		{
 			DocumentRdpClient document = (DocumentRdpClient)pThis;
@@ -345,17 +371,17 @@ namespace Plugin.RDP
 			Rectangle result = Screen.GetBounds(this._rdpClient.Control);
 			if(this.Plugin.Settings.UseMultipleMonitors && (result.Height < this._rdpClient.MsRdpClient.DesktopHeight || result.Width < this._rdpClient.MsRdpClient.DesktopWidth))
 			{
-				Int32 num = 0;
-				Int32 num2 = 65535;
+				Int32 width = 0;
+				Int32 height = 65535;
 				Screen[] allScreens = Screen.AllScreens;
 				foreach(Screen screen in Screen.AllScreens)
 				{
-					num += screen.Bounds.Width;
-					num2 = Math.Min(screen.Bounds.Height, num2);
+					width += screen.Bounds.Width;
+					height = Math.Min(screen.Bounds.Height, height);
 				}
-				num = Math.Min(num, RdpClient.MaxDesktopWidth);
-				num2 = Math.Min(num2, RdpClient.MaxDesktopHeight);
-				result = new Rectangle(0, 0, num, num2);
+				width = Math.Min(width, RdpClient.MaxDesktopWidth);
+				height = Math.Min(height, RdpClient.MaxDesktopHeight);
+				result = new Rectangle(0, 0, width, height);
 			} else
 				result = Screen.PrimaryScreen.WorkingArea;
 
