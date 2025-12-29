@@ -57,7 +57,7 @@
 	<ItemGroup Condition="'$(TargetFramework)' == 'net35'">
 		<Reference Include="System.Design" />
 		<Reference Include="System.Data.DataSetExtensions" />
-		</ItemGroup>
+	</ItemGroup>
 
 	<ItemGroup>
 		<Compile Include="..\Bll.Shared\BllBase.cs" Link="Bll\BllBase.cs" />
