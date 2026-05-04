@@ -66,7 +66,7 @@ namespace Plugin.RDP
 			}
 		}
 
-		private PluginWindows Plugin => (PluginWindows)this.Window.Plugin;
+		private PluginWindows Plugin => (PluginWindows)this.Window.Plugin.Instance;
 		private IWindow Window => (IWindow)base.Parent;
 
 		public DocumentRdpClient()
