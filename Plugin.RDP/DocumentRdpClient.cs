@@ -188,7 +188,7 @@ namespace Plugin.RDP
 		{
 			if(this.RdpClient.ConnectionStatus == RDP.RdpClient.ConnectionState.Connecting || this.RdpClient.ConnectionStatus == RDP.RdpClient.ConnectionState.Connected)
 			{//An error appears in SAL.EnvDTE when attempting to reopen the RDPClient window.
-				this.Plugin.Trace.TraceInformation("Attempt to call Connect to {0} Ctrl. Server: {1}", this.RdpClient.ConnectionStatus, this.RdpClientRow.Server);
+				this.Plugin.Trace.TraceEvent(TraceEventType.Information, 0, "Attempt to call Connect to {0} Ctrl. Server: {1}", this.RdpClient.ConnectionStatus, this.RdpClientRow.Server);
 				return;
 			}
 

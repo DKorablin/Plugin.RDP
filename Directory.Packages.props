@@ -3,7 +3,7 @@
 		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageVersion Include="SAL.Windows" Version="1.2.11" />
+		<PackageVersion Include="SAL.Windows" Version="1.2.12" />
 		<PackageVersion Include="Windows.AxMSTSCLib" Version="1.0.3"/>
 		<!--Analyzers-->
 		<GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.8.0.113526">

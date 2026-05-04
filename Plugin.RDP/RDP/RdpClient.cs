@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
@@ -536,7 +537,7 @@ namespace Plugin.RDP.RDP
 							Version version;
 							using(RdpClient5 client = new RdpClient5(null, form))
 							{
-								plugin.Trace.TraceInformation("RDP client version: {0}", client.Version);
+								plugin.Trace.TraceEvent(TraceEventType.Information, 0, "RDP client version: {0}", client.Version);
 								version = new Version(client.Version);
 							}
 
