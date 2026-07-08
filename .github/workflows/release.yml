@@ -1,4 +1,4 @@
-# This GitHub Actions workflow automates the CI/CD process for all SAL plugins.
+﻿# This GitHub Actions workflow automates the CI/CD process for all SAL plugins.
 #
 # Workflow Steps:
 # 1. Test: Runs all unit tests for the solution.
