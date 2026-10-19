@@ -12,6 +12,7 @@ Remote Desktop plugin that extends classic RDCMan style workflow with modern sho
 - Multi-monitor connection option
 - Auto-close window after disconnect (optional)
 - Per-connection credentials (user / password / domain)
+- Import and export of standard Remote Desktop Connection (.rdp) files compatible with mstsc.exe
 - Event model for connection state changes and client updates
 
 ## Download
@@ -32,6 +33,8 @@ To install the RDP Plugin, follow these steps:
 - Edit a client to specify server, credentials and options.
 - Connect to a client by double-clicking or using the context menu.
 - Use configured shortcut keys inside the remote session.
+- Import .rdp files from the Add button drop-down or folder context menu (multiple files supported; file name becomes the client name).
+- Export a client to an .rdp file from the client context menu. A saved password is optionally included, DPAPI encrypted for the current Windows user (same as mstsc.exe).
 
 ## Configuration
 Settings are stored as an embedded XML blob. They are loaded on startup and saved after changes (see `SettingsBll`).

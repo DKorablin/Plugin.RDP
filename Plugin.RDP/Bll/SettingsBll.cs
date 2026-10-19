@@ -188,6 +188,42 @@ namespace Plugin.RDP.Bll
 			this.OnClientUpdated(treeRow);
 		}
 
+		/// <summary>Create a new client from the Remote Desktop Connection (.rdp) file</summary>
+		/// <param name="parentTreeId">The parent node ID or null to add client to the root</param>
+		/// <param name="filePath">Path to the .rdp file</param>
+		/// <returns>The tree row of the imported client</returns>
+		public SettingsDataSet.TreeRow ImportClient(Int32? parentTreeId, String filePath)
+		{
+			RdpFile file = RdpFile.Load(filePath);
+
+			SettingsDataSet.RdpClientRow clientRow = base.DataSet.RdpClient.NewRdpClientRow();
+			clientRow.BeginEdit();
+			file.ToClient(clientRow);//Parse before adding the tree node so an invalid file leaves no orphan nodes
+
+			String name = Path.GetFileNameWithoutExtension(filePath);
+			SettingsDataSet.TreeRow treeRow = this.ModifyTreeNode(null, parentTreeId, ElementType.Client, String.IsNullOrWhiteSpace(name) ? clientRow.Server : name);
+
+			clientRow.TreeID = treeRow.TreeID;
+			base.DataSet.RdpClient.AddRdpClientRow(clientRow);
+
+			this.OnClientUpdated(treeRow);
+			return treeRow;
+		}
+
+		/// <summary>Save the client settings to the Remote Desktop Connection (.rdp) file</summary>
+		/// <param name="treeRow">Tree row of the client to export</param>
+		/// <param name="filePath">Path to the .rdp file</param>
+		/// <param name="includePassword">Store the password encrypted for the current Windows user</param>
+		public void ExportClient(SettingsDataSet.TreeRow treeRow, String filePath, Boolean includePassword)
+		{
+			_ = treeRow ?? throw new ArgumentNullException(nameof(treeRow));
+
+			SettingsDataSet.RdpClientRow clientRow = this.GetClientRow(treeRow.TreeID)
+				?? throw new ArgumentException($"Row with client ID {treeRow.TreeID} not found");
+
+			RdpFile.FromClient(treeRow, clientRow, includePassword).Save(filePath);
+		}
+
 		/// <summary>Delete a tree node and all its child nodes</summary>
 		/// <param name="row">The tree row to delete</param>
 		public void RemoveNode(SettingsDataSet.TreeRow row)

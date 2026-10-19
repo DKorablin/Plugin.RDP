@@ -175,5 +175,28 @@ namespace Plugin.RDP
 		/// <returns></returns>
 		[DllImport("wtsapi32.dll", EntryPoint = "WTSShutdownSystem",SetLastError = true)]
 		public static extern Boolean ShutdownSystem(IntPtr hServer, Int32 shutdownFlag);
+
+		/// <summary>Prevents DPAPI from displaying any user interface</summary>
+		public const Int32 CRYPTPROTECT_UI_FORBIDDEN = 0x1;
+
+		/// <summary>Arbitrary array of bytes used by DPAPI functions</summary>
+		[StructLayout(LayoutKind.Sequential)]
+		public struct DataBlob
+		{
+			public Int32 cbData;
+			public IntPtr pbData;
+		}
+
+		/// <summary>Encrypts the data so that only the current user on the same computer can decrypt it</summary>
+		[DllImport("crypt32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+		public static extern Boolean CryptProtectData(ref DataBlob pDataIn, String szDataDescr, IntPtr pOptionalEntropy, IntPtr pvReserved, IntPtr pPromptStruct, Int32 dwFlags, ref DataBlob pDataOut);
+
+		/// <summary>Decrypts the data protected by <see cref="CryptProtectData"/></summary>
+		[DllImport("crypt32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+		public static extern Boolean CryptUnprotectData(ref DataBlob pDataIn, IntPtr ppszDataDescr, IntPtr pOptionalEntropy, IntPtr pvReserved, IntPtr pPromptStruct, Int32 dwFlags, ref DataBlob pDataOut);
+
+		/// <summary>Frees the memory allocated by DPAPI functions</summary>
+		[DllImport("kernel32.dll")]
+		public static extern IntPtr LocalFree(IntPtr hMem);
 	}
 }

@@ -35,6 +35,7 @@
 			this.tsbnAdd = new System.Windows.Forms.ToolStripSplitButton();
 			this.tsmiAddClient = new System.Windows.Forms.ToolStripMenuItem();
 			this.tsmiAddNode = new System.Windows.Forms.ToolStripMenuItem();
+			this.tsmiImportRdp = new System.Windows.Forms.ToolStripMenuItem();
 			this.tsbnDelete = new System.Windows.Forms.ToolStripButton();
 			this.tvList = new Plugin.RDP.UI.RdpClientTreeView();
 			this.cmsClient = new System.Windows.Forms.ContextMenuStrip(this.components);
@@ -43,12 +44,14 @@
 			this.tsmiClientDisconnect = new System.Windows.Forms.ToolStripMenuItem();
 			this.tsmiClientLogOff = new System.Windows.Forms.ToolStripMenuItem();
 			this.tsmiClientListSessions = new System.Windows.Forms.ToolStripMenuItem();
+			this.tsmiClientExportRdp = new System.Windows.Forms.ToolStripMenuItem();
 			this.tsmiClientProperties = new System.Windows.Forms.ToolStripMenuItem();
 			this.ilList = new System.Windows.Forms.ImageList(this.components);
 			this.bgList = new System.ComponentModel.BackgroundWorker();
 			this.cmsNode = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.tsmiNodeAddClient = new System.Windows.Forms.ToolStripMenuItem();
 			this.tsmiNodeAddNode = new System.Windows.Forms.ToolStripMenuItem();
+			this.tsmiNodeImportRdp = new System.Windows.Forms.ToolStripMenuItem();
 			this.tsMain.SuspendLayout();
 			this.cmsClient.SuspendLayout();
 			this.cmsNode.SuspendLayout();
@@ -88,7 +91,8 @@
 			this.tsbnAdd.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
 			this.tsbnAdd.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tsmiAddClient,
-            this.tsmiAddNode});
+            this.tsmiAddNode,
+            this.tsmiImportRdp});
 			this.tsbnAdd.Image = global::Plugin.RDP.Properties.Resources.iconClientNew;
 			this.tsbnAdd.ImageTransparentColor = System.Drawing.Color.Magenta;
 			this.tsbnAdd.Name = "tsbnAdd";
@@ -113,6 +117,12 @@
 			this.tsmiAddNode.Name = "tsmiAddNode";
 			this.tsmiAddNode.Size = new System.Drawing.Size(131, 22);
 			this.tsmiAddNode.Text = "Add &Node";
+			// 
+			// tsmiImportRdp
+			// 
+			this.tsmiImportRdp.Name = "tsmiImportRdp";
+			this.tsmiImportRdp.Size = new System.Drawing.Size(131, 22);
+			this.tsmiImportRdp.Text = "&Import .rdp file...";
 			// 
 			// tsbnDelete
 			// 
@@ -152,9 +162,10 @@
             this.tsmiClientDisconnect,
             this.tsmiClientLogOff,
             this.tsmiClientListSessions,
+            this.tsmiClientExportRdp,
             this.tsmiClientProperties});
 			this.cmsClient.Name = "cmsClient";
-			this.cmsClient.Size = new System.Drawing.Size(139, 136);
+			this.cmsClient.Size = new System.Drawing.Size(181, 158);
 			this.cmsClient.Opening += new System.ComponentModel.CancelEventHandler(this.cmsClient_Opening);
 			this.cmsClient.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.cmsClient_ItemClicked);
 			// 
@@ -190,6 +201,12 @@
 			this.tsmiClientListSessions.Size = new System.Drawing.Size(138, 22);
 			this.tsmiClientListSessions.Text = "&List sessions";
 			// 
+			// tsmiClientExportRdp
+			// 
+			this.tsmiClientExportRdp.Name = "tsmiClientExportRdp";
+			this.tsmiClientExportRdp.Size = new System.Drawing.Size(180, 22);
+			this.tsmiClientExportRdp.Text = "&Export to .rdp file...";
+			// 
 			// tsmiClientProperties
 			// 
 			this.tsmiClientProperties.Name = "tsmiClientProperties";
@@ -213,9 +230,10 @@
 			// 
 			this.cmsNode.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tsmiNodeAddNode,
-			this.tsmiNodeAddClient});
+			this.tsmiNodeAddClient,
+			this.tsmiNodeImportRdp});
 			this.cmsNode.Name = "cmsNode";
-			this.cmsNode.Size = new System.Drawing.Size(153, 48);
+			this.cmsNode.Size = new System.Drawing.Size(171, 70);
 			this.cmsNode.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.cmsNode_ItemClicked);
 			// 
 			// tsmiNodeAddClient
@@ -229,6 +247,12 @@
 			this.tsmiNodeAddNode.Name = "tsmiNodeAddNode";
 			this.tsmiNodeAddNode.Size = new System.Drawing.Size(152, 22);
 			this.tsmiNodeAddNode.Text = "Add &Node";
+			// 
+			// tsmiNodeImportRdp
+			// 
+			this.tsmiNodeImportRdp.Name = "tsmiNodeImportRdp";
+			this.tsmiNodeImportRdp.Size = new System.Drawing.Size(170, 22);
+			this.tsmiNodeImportRdp.Text = "&Import .rdp file...";
 			// 
 			// PanelRdpClient
 			// 
@@ -268,5 +292,8 @@
 		private System.Windows.Forms.ToolStripMenuItem tsmiNodeAddNode;
 		private System.Windows.Forms.ToolStripMenuItem tsmiClientFocus;
 		private System.Windows.Forms.ToolStripMenuItem tsmiClientDisconnect;
+		private System.Windows.Forms.ToolStripMenuItem tsmiImportRdp;
+		private System.Windows.Forms.ToolStripMenuItem tsmiNodeImportRdp;
+		private System.Windows.Forms.ToolStripMenuItem tsmiClientExportRdp;
 	}
 }
