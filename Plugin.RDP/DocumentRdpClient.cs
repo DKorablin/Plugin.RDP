@@ -16,6 +16,12 @@ namespace Plugin.RDP
 		private DocumentRdpClientSettings _settings;
 		private Boolean _isControlCreated = false;
 		private FormWindowState _lastWindowState;
+		/// <summary>User logged in and display control channel is available</summary>
+		private Boolean _isLoggedIn = false;
+		/// <summary>Remote size was changed by full screen mode and must be restored even if client area is unchanged</summary>
+		private Boolean _isResizeForced = false;
+		/// <summary>Remote session resize is delayed till user stops resizing the window</summary>
+		private readonly Timer _resizeTimer = new Timer() { Interval = 500, };
 
 		Object IPluginSettings.Settings => this.Settings;
 
@@ -53,6 +59,7 @@ namespace Plugin.RDP
 					this._rdpClient = RdpClient.AllocClient(this.Plugin, this);
 
 					this._rdpClient.OnConnected += new EventHandler(this.RdpClient_OnConnected);
+					this._rdpClient.OnLoginComplete += new EventHandler(this.RdpClient_OnLoginComplete);
 					this._rdpClient.OnDisconnected += new AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEventHandler(this.RdpClient_OnDisconnected);
 					this._rdpClient.OnRequestLeaveFullScreen += new EventHandler(this.RdpClient_OnRequestLeaveFullScreen);
 
@@ -70,7 +77,10 @@ namespace Plugin.RDP
 		private IWindow Window => (IWindow)base.Parent;
 
 		public DocumentRdpClient()
-			=> this.InitializeComponent();
+		{
+			this.InitializeComponent();
+			this._resizeTimer.Tick += new EventHandler(this.ResizeTimer_Tick);
+		}
 
 		protected override void OnCreateControl()
 		{
@@ -108,6 +118,7 @@ namespace Plugin.RDP
 					break;
 				case FormWindowState.Normal:
 					this.RdpClient.LeaveFullScreen();
+					this.FitSessionAfterLeaveFullScreen();
 					break;
 				}
 			}
@@ -116,11 +127,48 @@ namespace Plugin.RDP
 		protected override void OnResize(EventArgs e)
 		{
 			base.OnResize(e);
+			this.ScheduleResizeSession();
+		}
 
-			// Only resize if connected and using "SameAsClient" desktop size mode
-			if(this.Window != null && this.RdpClient?.ConnectionStatus == RDP.RdpClient.ConnectionState.Connected &&
-				this.RdpClientRow.DesktopSizeI.SameAsClient)
-				this.RdpClient.UpdateSessionDisplaySettings(this.Size);
+		/// <summary>Restarts resize timer so remote session will be resized after user stops resizing the window</summary>
+		private void ScheduleResizeSession()
+		{
+			if(!this._isLoggedIn || this._rdpClient == null || !this.RdpClientRow.DesktopSizeI.SameAsClient)
+				return;
+
+			this._resizeTimer.Stop();
+			this._resizeTimer.Start();
+		}
+
+		private void ResizeTimer_Tick(Object sender, EventArgs e)
+		{
+			this._resizeTimer.Stop();
+
+			if(!this._isLoggedIn || this._rdpClient == null || !this.RdpClientRow.DesktopSizeI.SameAsClient)
+				return;
+			if(this.ParentForm?.WindowState == FormWindowState.Minimized || this.ClientSize.Width <= 0 || this.ClientSize.Height <= 0)
+				return;
+
+			if(this.RdpClient.MsRdpClient.FullScreen)
+				return;//Still in full screen. Keep forced flag till leaving full screen
+
+			Boolean allowReconnect = this.RdpClientRow.ConnectionTypeI != ConnectionType.VirtualMachineConsoleConnect;
+			RdpClient.ResizeMethod method = this.RdpClient.ResizeSession(this.ClientSize, allowReconnect, this._isResizeForced);
+			this._isResizeForced = false;
+			if(method != RdpClient.ResizeMethod.None)
+				this.Plugin.Trace.TraceEvent(TraceEventType.Verbose, 1, "Session {0} resized to {1}x{2} using {3}", this.RdpClientRow.Server, this.ClientSize.Width, this.ClientSize.Height, method);
+		}
+
+		/// <summary>Fits remote session into the client area after leaving full screen mode</summary>
+		private void FitSessionAfterLeaveFullScreen()
+		{
+			if(this.RdpClientRow.DesktopSizeI.SameAsClient)
+			{
+				this._isResizeForced = true;
+				this.ScheduleResizeSession();
+			}
+			else
+				this.RdpClient.AdvancedSettings2.SmartSizing = true;//Remote desktop is bigger than client area
 		}
 
 		private void Settings_PropertyChanged(Object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -143,7 +191,12 @@ namespace Plugin.RDP
 		{
 			this.Plugin.Settings.XmlSettings.RdpClientStateChange -= new EventHandler<RdpStateEventArgs>(this.XmlSettings_RdpClientConnected);
 
+			this._isLoggedIn = false;
+			this._resizeTimer.Stop();
+			this._resizeTimer.Dispose();
+
 			this.RdpClient.OnConnected -= new EventHandler(this.RdpClient_OnConnected);
+			this.RdpClient.OnLoginComplete -= new EventHandler(this.RdpClient_OnLoginComplete);
 			this.RdpClient.OnDisconnected -= new AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEventHandler(this.RdpClient_OnDisconnected);
 			this.RdpClient.OnRequestLeaveFullScreen -= new EventHandler(this.RdpClient_OnRequestLeaveFullScreen);
 
@@ -323,9 +376,20 @@ namespace Plugin.RDP
 			this.Plugin.Settings.XmlSettings.OnClientChangeState(this.Settings.TreeId.Value, RdpStateEventArgs.StateType.Connect);
 		}
 
+		private void RdpClient_OnLoginComplete(Object sender, EventArgs e)
+		{
+			this._isLoggedIn = true;
+			this.ScheduleResizeSession();//Client area could be changed while user was logging in
+		}
+
 		System.Threading.Timer _xpHack;
 		private void RdpClient_OnDisconnected(Object sender, AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEvent e)
 		{
+			this._isLoggedIn = false;
+			this._isResizeForced = false;
+			this._resizeTimer.Stop();
+			this.RdpClient.ResetResizeState();
+
 			this.SetConnectingState(false);
 			this.RdpClient.MsRdpClient.ConnectingText = "Disconnected";
 			if(e != null)
@@ -357,6 +421,8 @@ namespace Plugin.RDP
 			// Ensure parent form state is tracked correctly
 			if(this.ParentForm != null)
 				_lastWindowState = this.ParentForm.WindowState;
+
+			this.FitSessionAfterLeaveFullScreen();
 		}
 
 		private static void CloseWindowByTimer(Object pThis)
