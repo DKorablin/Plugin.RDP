@@ -17,17 +17,16 @@ namespace Plugin.RDP
 			public const Boolean UseMultipleMonitors = false;
 			public const Boolean CloseWindowAfterDisconnect = true;
 			public const RdpClient.SessionResizeMode ResizeMode = RdpClient.SessionResizeMode.Auto;
-			public const Keys AltTab = Keys.Alt | Keys.PageUp;
-			public const Keys AltShiftTab = Keys.Alt | Keys.PageDown;
-			public const Keys AltEsc = Keys.Alt | Keys.Insert;
-			public const Keys AltSpace = Keys.Alt | Keys.Delete;
+			//RDP control hot keys accept only virtual-key code. Modifier is fixed: ALT or CTRL+ALT
+			public const Keys AltTab = Keys.PageUp;
+			public const Keys AltShiftTab = Keys.PageDown;
+			public const Keys AltEsc = Keys.Insert;
+			public const Keys AltSpace = Keys.Delete;
 
-			public const Keys CtrlEsc = Keys.Alt | Keys.Home;
-			public const Keys CtrlAltDelete = Keys.Control | Keys.Alt | Keys.End;
+			public const Keys CtrlEsc = Keys.Home;
+			public const Keys CtrlAltDelete = Keys.End;
 
-			public const Keys FullScreen = Keys.Control | Keys.Alt | Keys.Pause;
-			public const Keys PreviousSession = Keys.Control | Keys.Alt | Keys.Left;
-			public const Keys SelectSession = Keys.Control | Keys.Alt | Keys.Right;
+			public const Keys FullScreen = Keys.Cancel;//CTRL+ALT+BREAK sends VK_CANCEL
 		}
 		private readonly PluginWindows _plugin;
 		private SettingsBll _xmlSettings;
@@ -49,8 +48,6 @@ namespace Plugin.RDP
 		private Keys _ctrlAltDelete = Defaults.CtrlAltDelete;
 
 		private Keys _fullScreen = Defaults.FullScreen;
-		private Keys _previousSession = Defaults.PreviousSession;
-		private Keys _selectSession = Defaults.SelectSession;
 
 		/// <summary>RDP client settings</summary>
 		internal SettingsBll XmlSettings
@@ -134,7 +131,7 @@ None - do not resize")]
 		public Keys AltTab
 		{
 			get => this._altTab;
-			set => this.SetField(ref this._altTab, value, nameof(this.AltTab));
+			set => this.SetField(ref this._altTab, value & Keys.KeyCode, nameof(this.AltTab));
 		}
 
 		[Category("ALT hot keys")]
@@ -144,7 +141,7 @@ None - do not resize")]
 		public Keys AltShiftTab
 		{
 			get => this._altShiftTab;
-			set => this.SetField(ref this._altShiftTab, value, nameof(this.AltShiftTab));
+			set => this.SetField(ref this._altShiftTab, value & Keys.KeyCode, nameof(this.AltShiftTab));
 		}
 
 		[Category("ALT hot keys")]
@@ -154,7 +151,7 @@ None - do not resize")]
 		public Keys AltEsc
 		{
 			get => this._altEsc;
-			set => this.SetField(ref this._altEsc, value, nameof(this.AltEsc));
+			set => this.SetField(ref this._altEsc, value & Keys.KeyCode, nameof(this.AltEsc));
 		}
 
 		[Category("ALT hot keys")]
@@ -164,61 +161,41 @@ None - do not resize")]
 		public Keys AltSpace
 		{
 			get => this._altSpace;
-			set => this.SetField(ref this._altSpace, value, nameof(this.AltSpace));
+			set => this.SetField(ref this._altSpace, value & Keys.KeyCode, nameof(this.AltSpace));
 		}
+		#endregion ALT hot keys
 
-		[Category("ALT hot keys")]
+		#region CTRL hot keys
+		[Category("CTRL hot keys")]
 		[DisplayName("CTRL+ESC")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
 		[DefaultValue(Defaults.CtrlEsc)]
 		public Keys CtrlEsc
 		{
 			get => this._ctrlEsc;
-			set => this.SetField(ref this._ctrlEsc, value, nameof(this.CtrlEsc));
+			set => this.SetField(ref this._ctrlEsc, value & Keys.KeyCode, nameof(this.CtrlEsc));
 		}
-		#endregion ALT hot keys
-
-		#region CTRL+ALT hot keys
-		[Category("CTRL+ALT hot keys")]
+		
+		[Category("CTRL hot keys")]
 		[DisplayName("CTRL+ALT+DEL")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
 		[DefaultValue(Defaults.CtrlAltDelete)]
 		public Keys CtrlAltDel
 		{
 			get => this._ctrlAltDelete;
-			set => this.SetField(ref this._ctrlAltDelete, value, nameof(this.CtrlAltDel));
+			set => this.SetField(ref this._ctrlAltDelete, value & Keys.KeyCode, nameof(this.CtrlAltDel));
 		}
 
-		[Category("CTRL+ALT hot keys")]
+		[Category("CTRL hot keys")]
 		[DisplayName("Full screen")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
 		[DefaultValue(Defaults.FullScreen)]
 		public Keys FullScreen
 		{
 			get => this._fullScreen;
-			set => this.SetField(ref this._fullScreen, value, nameof(this.FullScreen));
+			set => this.SetField(ref this._fullScreen, value & Keys.KeyCode, nameof(this.FullScreen));
 		}
-
-		[Category("CTRL+ALT hot keys")]
-		[DisplayName("Previous session")]
-		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
-		[DefaultValue(Defaults.PreviousSession)]
-		public Keys PreviousSession
-		{
-			get => this._previousSession;
-			set => this.SetField(ref this._previousSession, value, nameof(this.PreviousSession));
-		}
-
-		[Category("CTRL+ALT hot keys")]
-		[DisplayName("Select session")]
-		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
-		[DefaultValue(Defaults.SelectSession)]
-		public Keys SelectSession
-		{
-			get => this._selectSession;
-			set => this.SetField(ref this._selectSession, value, nameof(this.SelectSession));
-		}
-		#endregion CTRL+ALT hot keys
+		#endregion CTRL hot keys
 
 		internal PluginSettings(PluginWindows plugin)
 			=> this._plugin = plugin;

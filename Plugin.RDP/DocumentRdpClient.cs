@@ -247,7 +247,8 @@ namespace Plugin.RDP
 				return;
 			}
 
-			this._resizeMode = this.Plugin.Settings.ResizeMode;
+			PluginSettings settings = this.Plugin.Settings;
+			this._resizeMode = settings.ResizeMode;
 			this.RdpClient.MsRdpClient.Server = String.IsNullOrEmpty(this.RdpClientRow.Server)
 				? this.TreeRow.Name
 				: this.RdpClientRow.Server;//If Server is empty then use TreeRow Name as Server Name
@@ -273,6 +274,22 @@ namespace Plugin.RDP
 			advanced.GrabFocusOnConnect = false;
 
 			advanced.EnableWindowsKey = 1;
+
+			//Hot keys (virtual-key code only, modifiers are fixed by the RDP control)
+			if(settings.AltTab != Keys.None)
+				advanced.HotKeyAltTab = (Int32)settings.AltTab;
+			if(settings.AltShiftTab != Keys.None)
+				advanced.HotKeyAltShiftTab = (Int32)settings.AltShiftTab;
+			if(settings.AltEsc != Keys.None)
+				advanced.HotKeyAltEsc = (Int32)settings.AltEsc;
+			if(settings.AltSpace != Keys.None)
+				advanced.HotKeyAltSpace = (Int32)settings.AltSpace;
+			if(settings.CtrlEsc != Keys.None)
+				advanced.HotKeyCtrlEsc = (Int32)settings.CtrlEsc;
+			if(settings.CtrlAltDel != Keys.None)
+				advanced.HotKeyCtrlAltDel = (Int32)settings.CtrlAltDel;
+			if(settings.FullScreen != Keys.None)
+				advanced.HotKeyFullScreen = (Int32)settings.FullScreen;
 
 			advanced.RedirectDrives = (this.RdpClientRow.RedirectI & RedirectFlags.Drives) == RedirectFlags.Drives;
 			advanced.RedirectPorts = (this.RdpClientRow.RedirectI & RedirectFlags.Ports) == RedirectFlags.Ports;
