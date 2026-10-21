@@ -20,6 +20,8 @@ namespace Plugin.RDP
 		private Boolean _isLoggedIn = false;
 		/// <summary>Remote size was changed by full screen mode and must be restored even if client area is unchanged</summary>
 		private Boolean _isResizeForced = false;
+		/// <summary>Resize mode captured on connect. Changes in plugin settings are applied only to new connections</summary>
+		private RdpClient.SessionResizeMode _resizeMode = RdpClient.SessionResizeMode.Auto;
 		/// <summary>Remote session resize is delayed till user stops resizing the window</summary>
 		private readonly Timer _resizeTimer = new Timer() { Interval = 500, };
 
@@ -153,7 +155,7 @@ namespace Plugin.RDP
 				return;//Still in full screen. Keep forced flag till leaving full screen
 
 			Boolean allowReconnect = this.RdpClientRow.ConnectionTypeI != ConnectionType.VirtualMachineConsoleConnect;
-			RdpClient.ResizeMethod method = this.RdpClient.ResizeSession(this.ClientSize, allowReconnect, this._isResizeForced);
+			RdpClient.ResizeMethod method = this.RdpClient.ResizeSession(this.ClientSize, this._resizeMode, allowReconnect, this._isResizeForced);
 			this._isResizeForced = false;
 			if(method != RdpClient.ResizeMethod.None)
 				this.Plugin.Trace.TraceEvent(TraceEventType.Verbose, 1, "Session {0} resized to {1}x{2} using {3}", this.RdpClientRow.Server, this.ClientSize.Width, this.ClientSize.Height, method);
@@ -162,13 +164,13 @@ namespace Plugin.RDP
 		/// <summary>Fits remote session into the client area after leaving full screen mode</summary>
 		private void FitSessionAfterLeaveFullScreen()
 		{
-			if(this.RdpClientRow.DesktopSizeI.SameAsClient)
+			if(!this.RdpClientRow.DesktopSizeI.SameAsClient)
+				this.RdpClient.AdvancedSettings2.SmartSizing = true;//Remote desktop is bigger than client area
+			else if(this._resizeMode != RdpClient.SessionResizeMode.None)
 			{
 				this._isResizeForced = true;
 				this.ScheduleResizeSession();
 			}
-			else
-				this.RdpClient.AdvancedSettings2.SmartSizing = true;//Remote desktop is bigger than client area
 		}
 
 		private void Settings_PropertyChanged(Object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -245,6 +247,7 @@ namespace Plugin.RDP
 				return;
 			}
 
+			this._resizeMode = this.Plugin.Settings.ResizeMode;
 			this.RdpClient.MsRdpClient.Server = String.IsNullOrEmpty(this.RdpClientRow.Server)
 				? this.TreeRow.Name
 				: this.RdpClientRow.Server;//If Server is empty then use TreeRow Name as Server Name

@@ -109,6 +109,21 @@ namespace Plugin.RDP.RDP
 			Warn
 		}
 
+		/// <summary>User preferred method to fit remote session into the client area</summary>
+		public enum SessionResizeMode
+		{
+			/// <summary>Best available method: Dynamic → Reconnect → SmartSizing</summary>
+			Auto,
+			/// <summary>Change remote resolution without reconnect (Windows 8.1 / Server 2012 R2 and newer)</summary>
+			Dynamic,
+			/// <summary>Reconnect to the session with the new resolution</summary>
+			Reconnect,
+			/// <summary>Keep remote resolution and scale image on the client side</summary>
+			SmartSizing,
+			/// <summary>Do not resize remote session</summary>
+			None,
+		}
+
 		/// <summary>Method that is used to fit remote session into the client area</summary>
 		public enum ResizeMethod
 		{
@@ -537,14 +552,15 @@ namespace Plugin.RDP.RDP
 			this._lastResizeSize = Size.Empty;
 		}
 
-		/// <summary>Fits remote session to the client area using the best available method: Dynamic → Reconnect → SmartSizing</summary>
+		/// <summary>Fits remote session to the client area using the method selected by user</summary>
 		/// <param name="size">New client area size</param>
-		/// <param name="allowReconnect">Reconnect is allowed as a fallback method</param>
+		/// <param name="mode">User preferred resize method. Explicitly selected method is not replaced with another one if it fails</param>
+		/// <param name="allowReconnect">Reconnect is supported by the current connection type</param>
 		/// <param name="force">Resize even if the size is the same as last requested (remote size was changed outside, e.g. by full screen mode)</param>
 		/// <returns>Method that was used to fit remote session</returns>
-		public ResizeMethod ResizeSession(Size size, Boolean allowReconnect, Boolean force)
+		public ResizeMethod ResizeSession(Size size, SessionResizeMode mode, Boolean allowReconnect, Boolean force)
 		{
-			if(this.ConnectionStatus != ConnectionState.Connected || this.MsRdpClient.FullScreen)
+			if(mode == SessionResizeMode.None || this.ConnectionStatus != ConnectionState.Connected || this.MsRdpClient.FullScreen)
 				return ResizeMethod.None;
 
 			Size newSize = new Size(
@@ -556,18 +572,39 @@ namespace Plugin.RDP.RDP
 			if(!force && newSize == currentSize)
 				return ResizeMethod.None;
 
-			ResizeMethod result;
-			if(!this._isDynamicResizeFailed && this.UpdateSessionDisplaySettings(newSize))
-				result = ResizeMethod.Dynamic;
-			else if(allowReconnect && this.Reconnect(newSize))
-				result = ResizeMethod.Reconnect;
-			else
+			ResizeMethod result = ResizeMethod.None;
+			switch(mode)
 			{
+			case SessionResizeMode.Auto:
+				if(!this._isDynamicResizeFailed && this.UpdateSessionDisplaySettings(newSize))
+					result = ResizeMethod.Dynamic;
+				else if(allowReconnect && this.Reconnect(newSize))
+					result = ResizeMethod.Reconnect;
+				else
+				{
+					this.AdvancedSettings2.SmartSizing = true;
+					result = ResizeMethod.SmartSizing;
+				}
+				break;
+			case SessionResizeMode.Dynamic:
+				if(!this._isDynamicResizeFailed && this.UpdateSessionDisplaySettings(newSize))
+					result = ResizeMethod.Dynamic;
+				break;
+			case SessionResizeMode.Reconnect:
+				if(!allowReconnect)
+					this._plugin?.Trace.TraceEvent(TraceEventType.Warning, 0, "Reconnect with new resolution is not supported for {0} connection type", this.MsRdpClient.Server);
+				else if(this.Reconnect(newSize))
+					result = ResizeMethod.Reconnect;
+				break;
+			case SessionResizeMode.SmartSizing:
 				this.AdvancedSettings2.SmartSizing = true;
 				result = ResizeMethod.SmartSizing;
+				break;
+			default:
+				throw new NotSupportedException(mode.ToString());
 			}
 
-			this._lastResizeSize = newSize;
+			this._lastResizeSize = newSize;//Failed size is also stored to prevent retries with the same size
 			return result;
 		}
 
@@ -577,7 +614,11 @@ namespace Plugin.RDP.RDP
 		{
 			IMsRdpClient9 client = this.MsRdpClient9;
 			if(client == null)
+			{
+				this._isDynamicResizeFailed = true;
+				this._plugin?.Trace.TraceEvent(TraceEventType.Warning, 0, "Dynamic resize is not supported by RDP client version {0}", this.Version);
 				return false;
+			}
 
 			// Physical size in millimeters. Valid range is 10..10000, otherwise it is ignored by the server.
 			Int32 dpi = this.Control.DeviceDpi > 0 ? this.Control.DeviceDpi : 96;

@@ -10,6 +10,12 @@ Remote Desktop plugin that extends classic RDCMan style workflow with modern sho
   - ALT+TAB / ALT+SHIFT+TAB, ALT+ESC, ALT+SPACE, CTRL+ESC
   - CTRL+ALT+DEL, Full screen toggle, Previous / Next session
 - Multi-monitor connection option
+- Remote session follows the window size ("Same as client area" desktop size). Resize mode is selected in plugin settings (applies to new connections):
+  - Auto (default) - Dynamic, then Reconnect, then SmartSizing
+  - Dynamic - change remote resolution without reconnect (Windows 8.1 / Server 2012 R2 and newer)
+  - Reconnect - reconnect with the new resolution
+  - SmartSizing - scale the image without changing remote resolution
+  - None - do not resize
 - Auto-close window after disconnect (optional)
 - Per-connection credentials (user / password / domain)
 - Import and export of standard Remote Desktop Connection (.rdp) files compatible with mstsc.exe
