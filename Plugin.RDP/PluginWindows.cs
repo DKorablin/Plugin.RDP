@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Plugin.RDP.Bll;
-using Plugin.RDP.UI;
 using SAL.Flatbed;
 using SAL.Windows;
 
@@ -13,7 +12,6 @@ namespace Plugin.RDP
 	{
 		private PluginSettings _settings;
 		private Dictionary<String, DockState> _documentTypes;
-		private RdpClientDlg _properties;
 
 		internal ITraceSource Trace { get; }
 
@@ -85,45 +83,9 @@ namespace Plugin.RDP
 
 		Boolean IPlugin.OnDisconnection(DisconnectMode mode)
 		{
-			if(this._properties != null)
-			{
-				this._properties.Dispose();
-				this._properties = null;
-			}
-
 			if(this.RdpClientMenu != null)
 				this.HostWindows.MainMenu.Items.Remove(this.RdpClientMenu);
 			return true;
-		}
-
-		/// <summary>Show the window for creating a new RDP client</summary>
-		/// <param name="parentRow">Parent node of the client being created</param>
-		internal void InvokeCreateClientDlg(SettingsDataSet.TreeRow parentRow)
-		{
-			if(this._properties == null)
-				this._properties = new RdpClientDlg(this);
-
-			this._properties.ToggleNewClientRow(parentRow);
-			this._properties.Show();
-			this._properties.Focus();
-		}
-
-		/// <summary>Show the RDP client settings change window</summary>
-		/// <param name="row">Show the client settings change window</param>
-		internal void InvokeModifyClientDlg(SettingsDataSet.TreeRow row)
-		{
-			if(this._properties == null)
-				this._properties = new RdpClientDlg(this);
-
-			this._properties.ToggleRdpClientRow(row);
-			this._properties.Show();
-			this._properties.Focus();
-		}
-
-		internal virtual void OnRowSelected(SettingsDataSet.TreeRow row)
-		{
-			if(this._properties != null && this._properties.Visible)
-				this._properties.ToggleRdpClientRow(row);
 		}
 
 		internal IWindow CreateWindow(String typeName, Boolean searchForOpened, Object args = null)

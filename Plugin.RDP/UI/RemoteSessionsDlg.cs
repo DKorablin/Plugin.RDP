@@ -6,11 +6,14 @@ using System.Diagnostics;
 
 namespace Plugin.RDP.UI
 {
-	internal partial class RemoteSessionsDlg : Form,IDisposable
+	internal partial class RemoteSessionsDlg : UserControl
 	{
 		private const String Caption = "Remote Sessions";
 		private readonly RemoteSessions _sessions;
 		private readonly PluginWindows _plugin;
+		/// <summary>The user requested to close the sessions list</summary>
+		public event EventHandler CloseRequested;
+
 		private Boolean IsThreadsBusy => bgQuerySessions.IsBusy || bgDisconnectSession.IsBusy || bgLogoffSession.IsBusy;
 
 		public RemoteSessionsDlg(PluginWindows plugin, String server)
@@ -77,18 +80,11 @@ namespace Plugin.RDP.UI
 			switch(keyData)
 			{
 			case Keys.Escape:
-				base.Close();
+				this.CloseRequested?.Invoke(this, EventArgs.Empty);
 				return true;
 			default:
 				return base.ProcessDialogKey(keyData);
 			}
-		}
-
-		void IDisposable.Dispose()
-		{
-			if(this._sessions.IsConnected)
-				this._sessions.CloseServer();
-			base.Dispose();
 		}
 
 		private void lvSessions_KeyDown(Object sender, KeyEventArgs e)
@@ -172,7 +168,7 @@ namespace Plugin.RDP.UI
 					lvSessions.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
 					lvSessions.EndUpdate();
 					tsslStatus.Text = "Ready";
-					base.Text = String.Format("{0:n0} - {0:n0} session{1}", lvSessions.Items.Count, lvSessions.Items.Count != 0 ? "s" : String.Empty);
+					base.Text = String.Format("{0} - {1:n0} session{2}", RemoteSessionsDlg.Caption, lvSessions.Items.Count, lvSessions.Items.Count != 1 ? "s" : String.Empty);
 				}
 			}
 		}
@@ -182,7 +178,7 @@ namespace Plugin.RDP.UI
 
 			foreach(RemoteSessions.RemoteSessionInfo session in sessions)
 			{
-				tsslStatus.Text = "Logging off " + session.UserName;
+				bgLogoffSession.ReportProgress(0, "Logging off " + session.UserName);
 				this._sessions.LogOffSession(session.SessionId);
 			}
 		}
@@ -210,9 +206,15 @@ namespace Plugin.RDP.UI
 			foreach(RemoteSessions.RemoteSessionInfo session in sessions)
 				if(session.State != Native.ConnectStateClass.Disconnected)
 				{
-					tsslStatus.Text = "Disconnecting " + session.UserName;
+					bgDisconnectSession.ReportProgress(0, "Disconnecting " + session.UserName);
 					this._sessions.DisconnectSession(session.SessionId);
 				}
+		}
+
+		private void bgSession_ProgressChanged(Object sender, ProgressChangedEventArgs e)
+		{
+			if(!base.IsDisposed)
+				tsslStatus.Text = (String)e.UserState;
 		}
 
 		private void bgDisconnectSession_RunWorkerCompleted(Object sender, RunWorkerCompletedEventArgs e)

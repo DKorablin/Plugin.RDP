@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace Plugin.RDP.UI
 {
-	internal partial class RdpClientDlg : Form
+	internal partial class RdpClientDlg : UserControl
 	{
 		private static readonly Type ClientRowType = typeof(SettingsDataSet.RdpClientRow);
 
@@ -18,6 +18,9 @@ namespace Plugin.RDP.UI
 		private SettingsDataSet.TreeRow _row;
 
 		private SettingsDataSet.TreeRow _parentRow;
+
+		/// <summary>The user requested to close the editor or the changes were saved</summary>
+		public event EventHandler CloseRequested;
 
 		private SettingsDataSet.RdpClientRow ClientRow
 			=> this._row == null
@@ -506,17 +509,36 @@ namespace Plugin.RDP.UI
 			switch(keyData)
 			{
 			case Keys.Control | Keys.S:
-				base.AcceptButton.PerformClick();
+				tsbnSave.PerformClick();
 				return true;
 			case Keys.Escape:
-				base.Hide();
+				this.OnCloseRequested();
 				return true;
 			default:
 				return base.ProcessDialogKey(keyData);
 			}
 		}
 
-		protected override void OnValidating(CancelEventArgs e)
+		/// <summary>Check whether the node or any of its children is edited by this editor</summary>
+		/// <param name="node">Tree node to check</param>
+		/// <returns>The node or any of its children is the edited client or parent of the new client</returns>
+		internal Boolean IsEditing(RdpClientTreeNode node)
+		{
+			if(node.Tag != null && (node.Tag == this._row || node.Tag == this._parentRow))
+				return true;
+
+			foreach(RdpClientTreeNode child in node.Nodes)
+				if(this.IsEditing(child))
+					return true;
+			return false;
+		}
+
+		private void OnCloseRequested()
+			=> this.CloseRequested?.Invoke(this, EventArgs.Empty);
+
+		/// <summary>Check required fields and highlight invalid ones</summary>
+		/// <returns>All required fields are filled</returns>
+		private Boolean ValidateInput()
 		{
 			Boolean cancel = false;
 			if(String.IsNullOrEmpty(this.ClientName))
@@ -554,21 +576,12 @@ namespace Plugin.RDP.UI
 
 			if(cancel)
 				tabMain.SelectedIndex = 0;
-			e.Cancel = cancel;
-
-			base.OnValidating(e);
-		}
-
-		protected override void OnClosing(CancelEventArgs e)
-		{
-			e.Cancel = true;
-			base.Hide();
-			base.OnClosing(e);
+			return !cancel;
 		}
 
 		private void tsbnSave_Click(Object sender, EventArgs e)
 		{
-			if(base.Validate())
+			if(base.Validate() && this.ValidateInput())
 			{
 				SettingsDataSet.TreeRow clientRow;
 				if(this._row != null)
@@ -586,17 +599,8 @@ namespace Plugin.RDP.UI
 				this._plugin.Settings.XmlSettings.ModifyClient(clientRow, this);
 				this._plugin.Settings.XmlSettings.Save();
 
-				this._row = null;
-				this._parentRow = null;
-				base.Hide();
+				this.OnCloseRequested();
 			}
-		}
-
-		private void bnCancel_Click(Object sender, EventArgs e)
-		{
-			this._row = null;
-			this._parentRow = null;
-			base.Hide();
 		}
 
 		private void cbRunApplication_CheckedChanged(Object sender, EventArgs e)

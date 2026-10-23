@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using Plugin.RDP.Bll;
 using Plugin.RDP.UI;
@@ -14,6 +15,9 @@ namespace Plugin.RDP
 	{
 		private PluginWindows Plugin => (PluginWindows)this.Window.Plugin.Instance;
 		private IWindow Window => (IWindow)base.Parent;
+
+		/// <summary>Client settings editor displayed in the bottom panel or null</summary>
+		private RdpClientDlg Editor => splitMain.Panel2.Controls.OfType<RdpClientDlg>().FirstOrDefault();
 
 		public PanelRdpClient()
 		{
@@ -78,6 +82,45 @@ namespace Plugin.RDP
 		{
 			this.Plugin.Settings.XmlSettings.RdpClientStateChange -= this.XmlSettings_RdpClientConnected;
 			this.Plugin.Settings.XmlSettings.RdpClientUpdated -= this.XmlSettings_RdpClientUpdated;
+			this.CloseDetails();
+		}
+
+		/// <summary>Show the control in the bottom panel, replacing the previous one</summary>
+		/// <param name="ctrl">Control to display</param>
+		private void ShowDetails(Control ctrl)
+		{
+			this.CloseDetails();
+
+			ctrl.Dock = DockStyle.Fill;
+			if(ctrl is RdpClientDlg editor)
+				editor.CloseRequested += this.Details_CloseRequested;
+			else if(ctrl is RemoteSessionsDlg sessions)
+				sessions.CloseRequested += this.Details_CloseRequested;
+
+			splitMain.Panel2.Controls.Add(ctrl);
+			if(splitMain.Panel2Collapsed)
+			{
+				splitMain.Panel2Collapsed = false;
+				splitMain.SplitterDistance = Math.Max(splitMain.Panel1MinSize, splitMain.Height / 3);
+			}
+			ctrl.Focus();
+		}
+
+		/// <summary>Collapse the bottom panel and destroy the control displayed inside it</summary>
+		private void CloseDetails()
+		{
+			splitMain.Panel2Collapsed = true;
+			while(splitMain.Panel2.Controls.Count > 0)
+				splitMain.Panel2.Controls[0].Dispose();
+		}
+
+		private void Details_CloseRequested(Object sender, EventArgs e)
+			=> this.CloseDetails();
+
+		private void splitMain_MouseDoubleClick(Object sender, MouseEventArgs e)
+		{
+			if(splitMain.SplitterRectangle.Contains(e.Location))
+				this.CloseDetails();
 		}
 
 		private void bgList_DoWork(Object sender, System.ComponentModel.DoWorkEventArgs e)
@@ -140,7 +183,9 @@ namespace Plugin.RDP
 					? tvList.SelectedNode.Tag
 					: null;
 
-				this.Plugin.InvokeCreateClientDlg(parentRow);
+				RdpClientDlg editor = new RdpClientDlg(this.Plugin);
+				editor.ToggleNewClientRow(parentRow);
+				this.ShowDetails(editor);
 			} else if(e.ClickedItem == tsmiAddNode || e.ClickedItem == tsmiNodeAddNode)
 			{
 				RdpClientTreeNode node = new RdpClientTreeNode(null, ElementType.Tree);
@@ -233,6 +278,10 @@ namespace Plugin.RDP
 			}
 			if(MessageBox.Show(message, this.Window.Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
 			{//Removing a node from settings
+				RdpClientDlg editor = this.Editor;
+				if(editor != null && editor.IsEditing(tvList.SelectedNode))
+					this.CloseDetails();
+
 				this.Plugin.Settings.XmlSettings.RemoveNode(row);
 				this.Plugin.Settings.XmlSettings.Save();
 				tvList.SelectedNode.Remove();
@@ -376,7 +425,7 @@ namespace Plugin.RDP
 			if(e.Node != null)
 			{
 				RdpClientTreeNode node = (RdpClientTreeNode)e.Node;
-				this.Plugin.OnRowSelected(node.Tag);
+				this.Editor?.ToggleRdpClientRow(node.Tag);
 			}
 		}
 
@@ -413,8 +462,7 @@ namespace Plugin.RDP
 					this.Plugin.Settings.XmlSettings.OnClientChangeState(row.TreeID, RdpStateEventArgs.StateType.Disconnect);
 			} else if(e.ClickedItem == tsmiClientListSessions)
 			{//Displaying a list of sessions to the server
-				using(RemoteSessionsDlg dlg = new RemoteSessionsDlg(this.Plugin, row.RdpClientRow.Server))
-					dlg.ShowDialog();
+				this.ShowDetails(new RemoteSessionsDlg(this.Plugin, row.RdpClientRow.Server));
 			} else if(e.ClickedItem == tsmiClientLogOff)
 			{//Client exits the server
 				if(MessageBox.Show(String.Format("Are you sure you want to logOff from client {0}?", row.Name), this.Window.Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
@@ -432,8 +480,11 @@ namespace Plugin.RDP
 			} else if(e.ClickedItem == tsmiClientProperties)
 			{//Displaying server connection properties
 				if(row.ElementType == ElementType.Client)
-					this.Plugin.InvokeModifyClientDlg(row);
-				else
+				{
+					RdpClientDlg editor = new RdpClientDlg(this.Plugin);
+					editor.ToggleRdpClientRow(row);
+					this.ShowDetails(editor);
+				} else
 					throw new InvalidOperationException();
 			} else
 				throw new NotImplementedException(e.ClickedItem.ToString());

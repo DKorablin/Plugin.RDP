@@ -30,6 +30,7 @@
 		{
 			this.components = new System.ComponentModel.Container();
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PanelRdpClient));
+			this.splitMain = new System.Windows.Forms.SplitContainer();
 			this.gridSearch = new AlphaOmega.Windows.Forms.SearchGrid();
 			this.tsMain = new System.Windows.Forms.ToolStrip();
 			this.tsbnAdd = new System.Windows.Forms.ToolStripSplitButton();
@@ -52,10 +53,31 @@
 			this.tsmiNodeAddClient = new System.Windows.Forms.ToolStripMenuItem();
 			this.tsmiNodeAddNode = new System.Windows.Forms.ToolStripMenuItem();
 			this.tsmiNodeImportRdp = new System.Windows.Forms.ToolStripMenuItem();
+			((System.ComponentModel.ISupportInitialize)(this.splitMain)).BeginInit();
+			this.splitMain.Panel1.SuspendLayout();
+			this.splitMain.SuspendLayout();
 			this.tsMain.SuspendLayout();
 			this.cmsClient.SuspendLayout();
 			this.cmsNode.SuspendLayout();
 			this.SuspendLayout();
+			// 
+			// splitMain
+			// 
+			this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.splitMain.Location = new System.Drawing.Point(0, 0);
+			this.splitMain.Name = "splitMain";
+			this.splitMain.Orientation = System.Windows.Forms.Orientation.Horizontal;
+			// 
+			// splitMain.Panel1
+			// 
+			this.splitMain.Panel1.Controls.Add(this.tvList);
+			this.splitMain.Panel1.Controls.Add(this.gridSearch);
+			this.splitMain.Panel1.Controls.Add(this.tsMain);
+			this.splitMain.Panel2Collapsed = true;
+			this.splitMain.Size = new System.Drawing.Size(150, 150);
+			this.splitMain.SplitterDistance = 75;
+			this.splitMain.TabIndex = 0;
+			this.splitMain.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.splitMain_MouseDoubleClick);
 			// 
 			// gridSearch
 			// 
@@ -148,6 +170,7 @@
 			this.tvList.SelectedImageIndex = 0;
 			this.tvList.Size = new System.Drawing.Size(150, 125);
 			this.tvList.TabIndex = 1;
+			this.tvList.HideSelection = false;
 			this.tvList.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.tvList_AfterLabelEdit);
 			this.tvList.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.tvList_AfterSelect);
 			this.tvList.KeyDown += new System.Windows.Forms.KeyEventHandler(this.tvList_KeyDown);
@@ -258,10 +281,12 @@
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.Controls.Add(this.gridSearch);
-			this.Controls.Add(this.tvList);
-			this.Controls.Add(this.tsMain);
+			this.Controls.Add(this.splitMain);
 			this.Name = "PanelRdpClient";
+			this.splitMain.Panel1.ResumeLayout(false);
+			this.splitMain.Panel1.PerformLayout();
+			((System.ComponentModel.ISupportInitialize)(this.splitMain)).EndInit();
+			this.splitMain.ResumeLayout(false);
 			this.tsMain.ResumeLayout(false);
 			this.tsMain.PerformLayout();
 			this.cmsClient.ResumeLayout(false);
@@ -273,6 +298,7 @@
 
 		#endregion
 
+		private System.Windows.Forms.SplitContainer splitMain;
 		private System.Windows.Forms.ToolStrip tsMain;
 		private Plugin.RDP.UI.RdpClientTreeView tvList;
 		private System.Windows.Forms.ToolStripSplitButton tsbnAdd;
