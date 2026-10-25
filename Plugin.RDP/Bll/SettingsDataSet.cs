@@ -97,7 +97,7 @@ namespace Plugin.RDP.Bll
 			[DefaultValue(RDP.RdpClient.DefaultRDPPort)]
 			public Int32 ConnectPortI
 			{
-				get { return this.IsConnectPortNull() ? RDP.RdpClient.DefaultRDPPort : this.ConnectPort; }
+				get => this.IsConnectPortNull() ? RDP.RdpClient.DefaultRDPPort : this.ConnectPort;
 				set
 				{
 					if(value == 0 || value == RDP.RdpClient.DefaultRDPPort)
@@ -110,7 +110,7 @@ namespace Plugin.RDP.Bll
 			[DefaultValue(Plugin.RDP.RDP.RdpClient.DefaultColorDepth)]
 			public Int32 ColorDepthI
 			{
-				get { return this.IsColorDepthNull() ? RDP.RdpClient.DefaultColorDepth : this.ColorDepth; }
+				get => this.IsColorDepthNull() ? RDP.RdpClient.DefaultColorDepth : this.ColorDepth;
 				set
 				{
 					if(value == 0 || value == RDP.RdpClient.DefaultColorDepth)

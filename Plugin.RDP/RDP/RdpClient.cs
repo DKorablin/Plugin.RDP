@@ -148,7 +148,7 @@ namespace Plugin.RDP.RDP
 
 		public const Int32 DefaultColorDepth = 24;
 		public const Int32 DefaultRDPPort = 3389;
-		//public const Int32 DefaultVMConsoleConnectPort = 2179;
+		public const Int32 DefaultVMConsoleConnectPort = 2179;
 		public const Int32 PerfDisableCursorBlinking = 64;
 		public const Int32 PerfDisableCursorShadow = 32;
 		public const Int32 PerfDisableFullWindowDrag = 2;
@@ -552,7 +552,7 @@ namespace Plugin.RDP.RDP
 			this._lastResizeSize = Size.Empty;
 		}
 
-		/// <summary>Fits remote session to the client area using the method selected by user</summary>
+		/// <summary>Fits remote session to the client area (or to the screen in full screen mode) using the method selected by user</summary>
 		/// <param name="size">New client area size</param>
 		/// <param name="mode">User preferred resize method. Explicitly selected method is not replaced with another one if it fails</param>
 		/// <param name="allowReconnect">Reconnect is supported by the current connection type</param>
@@ -560,7 +560,7 @@ namespace Plugin.RDP.RDP
 		/// <returns>Method that was used to fit remote session</returns>
 		public ResizeMethod ResizeSession(Size size, SessionResizeMode mode, Boolean allowReconnect, Boolean force)
 		{
-			if(mode == SessionResizeMode.None || this.ConnectionStatus != ConnectionState.Connected || this.MsRdpClient.FullScreen)
+			if(mode == SessionResizeMode.None || this.ConnectionStatus != ConnectionState.Connected)
 				return ResizeMethod.None;
 
 			Size newSize = new Size(
@@ -990,6 +990,58 @@ namespace Plugin.RDP.RDP
 					this._rdpClient6.OnRequestLeaveFullScreen -= value;
 				else
 					this._rdpClient5.OnRequestLeaveFullScreen -= value;
+			}
+		}
+
+		public event EventHandler OnEnterFullScreenMode
+		{
+			add
+			{
+				if(this._rdpClient8 != null)
+					this._rdpClient8.OnEnterFullScreenMode += value;
+				else if(this._rdpClient7 != null)
+					this._rdpClient7.OnEnterFullScreenMode += value;
+				else if(this._rdpClient6 != null)
+					this._rdpClient6.OnEnterFullScreenMode += value;
+				else
+					this._rdpClient5.OnEnterFullScreenMode += value;
+			}
+			remove
+			{
+				if(this._rdpClient8 != null)
+					this._rdpClient8.OnEnterFullScreenMode -= value;
+				else if(this._rdpClient7 != null)
+					this._rdpClient7.OnEnterFullScreenMode -= value;
+				else if(this._rdpClient6 != null)
+					this._rdpClient6.OnEnterFullScreenMode -= value;
+				else
+					this._rdpClient5.OnEnterFullScreenMode -= value;
+			}
+		}
+
+		public event EventHandler OnLeaveFullScreenMode
+		{
+			add
+			{
+				if(this._rdpClient8 != null)
+					this._rdpClient8.OnLeaveFullScreenMode += value;
+				else if(this._rdpClient7 != null)
+					this._rdpClient7.OnLeaveFullScreenMode += value;
+				else if(this._rdpClient6 != null)
+					this._rdpClient6.OnLeaveFullScreenMode += value;
+				else
+					this._rdpClient5.OnLeaveFullScreenMode += value;
+			}
+			remove
+			{
+				if(this._rdpClient8 != null)
+					this._rdpClient8.OnLeaveFullScreenMode -= value;
+				else if(this._rdpClient7 != null)
+					this._rdpClient7.OnLeaveFullScreenMode -= value;
+				else if(this._rdpClient6 != null)
+					this._rdpClient6.OnLeaveFullScreenMode -= value;
+				else
+					this._rdpClient5.OnLeaveFullScreenMode -= value;
 			}
 		}
 

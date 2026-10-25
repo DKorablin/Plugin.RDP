@@ -17,6 +17,7 @@ namespace Plugin.RDP
 			public const Boolean UseMultipleMonitors = false;
 			public const Boolean CloseWindowAfterDisconnect = true;
 			public const RdpClient.SessionResizeMode ResizeMode = RdpClient.SessionResizeMode.Auto;
+			public const Boolean AutoFillPasswordPrompt = false;
 			//RDP control hot keys accept only virtual-key code. Modifier is fixed: ALT or CTRL+ALT
 			public const Keys AltTab = Keys.PageUp;
 			public const Keys AltShiftTab = Keys.PageDown;
@@ -38,6 +39,7 @@ namespace Plugin.RDP
 		private String _user;
 		private String _password;
 		private String _domain;
+		private Boolean _autoFillPasswordPrompt = Defaults.AutoFillPasswordPrompt;
 
 		private Keys _altTab = Defaults.AltTab;
 		private Keys _altShiftTab = Defaults.AltShiftTab;
@@ -121,11 +123,23 @@ None - do not resize")]
 			get => this._domain;
 			set => this.SetField(ref this._domain, value, nameof(this.Domain));
 		}
+
+		[Category("Credentials")]
+		[DisplayName("Auto fill password prompt")]
+		[Description(@"Automatically enter the stored connection password into the Windows Security dialog when the server policy requires the password to be entered manually (""Always prompt for password upon connection"").
+The password is entered only once per connection attempt.")]
+		[DefaultValue(Defaults.AutoFillPasswordPrompt)]
+		public Boolean AutoFillPasswordPrompt
+		{
+			get => this._autoFillPasswordPrompt;
+			set => this.SetField(ref this._autoFillPasswordPrompt, value, nameof(this.AutoFillPasswordPrompt));
+		}
 		#endregion Credentials
 
 		#region ALT hot keys
 		[Category("ALT hot keys")]
 		[DisplayName("ALT+TAB")]
+		[Description("Key that, combined with ALT, sends ALT+TAB to the remote session to switch between programs (default: ALT+PAGE UP)")]
 		[Editor(typeof(ShortcutKeysEditor),typeof(UITypeEditor))]
 		[DefaultValue(Defaults.AltTab)]
 		public Keys AltTab
@@ -136,6 +150,7 @@ None - do not resize")]
 
 		[Category("ALT hot keys")]
 		[DisplayName("ALT+SHIFT+TAB")]
+		[Description("Key that, combined with ALT, sends ALT+SHIFT+TAB to the remote session to switch between programs in reverse order (default: ALT+PAGE DOWN)")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
 		[DefaultValue(Defaults.AltShiftTab)]
 		public Keys AltShiftTab
@@ -146,6 +161,7 @@ None - do not resize")]
 
 		[Category("ALT hot keys")]
 		[DisplayName("ALT+ESC")]
+		[Description("Key that, combined with ALT, sends ALT+ESC to the remote session to cycle through programs in the order they were started (default: ALT+INSERT)")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
 		[DefaultValue(Defaults.AltEsc)]
 		public Keys AltEsc
@@ -156,6 +172,7 @@ None - do not resize")]
 
 		[Category("ALT hot keys")]
 		[DisplayName("ALT+SPACE")]
+		[Description("Key that, combined with ALT, sends ALT+SPACE to the remote session to open the window system menu (default: ALT+DELETE)")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
 		[DefaultValue(Defaults.AltSpace)]
 		public Keys AltSpace
@@ -168,6 +185,7 @@ None - do not resize")]
 		#region CTRL hot keys
 		[Category("CTRL hot keys")]
 		[DisplayName("CTRL+ESC")]
+		[Description("Key that, combined with ALT, sends CTRL+ESC to the remote session to open the Start menu (default: ALT+HOME)")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
 		[DefaultValue(Defaults.CtrlEsc)]
 		public Keys CtrlEsc
@@ -178,6 +196,7 @@ None - do not resize")]
 		
 		[Category("CTRL hot keys")]
 		[DisplayName("CTRL+ALT+DEL")]
+		[Description("Key that, combined with CTRL+ALT, sends CTRL+ALT+DEL to the remote session to open the Windows Security screen (default: CTRL+ALT+END)")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
 		[DefaultValue(Defaults.CtrlAltDelete)]
 		public Keys CtrlAltDel
@@ -188,6 +207,7 @@ None - do not resize")]
 
 		[Category("CTRL hot keys")]
 		[DisplayName("Full screen")]
+		[Description("Key that, combined with CTRL+ALT, toggles the remote session between full screen and window mode (default: CTRL+ALT+BREAK)")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
 		[DefaultValue(Defaults.FullScreen)]
 		public Keys FullScreen

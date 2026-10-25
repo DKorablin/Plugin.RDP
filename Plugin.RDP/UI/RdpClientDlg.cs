@@ -574,6 +574,17 @@ namespace Plugin.RDP.UI
 				txtUser.BackColor = Color.Empty;
 			}
 
+			if(cbVmConsole.Checked && String.IsNullOrEmpty(this.VirtualMachineId))
+			{
+				error.SetError(txtVmConsoleId, "Virtual machine ID is required");
+				txtVmConsoleId.BackColor = SystemColors.Info;
+				cancel = true;
+			} else
+			{
+				error.SetError(txtVmConsoleId, String.Empty);
+				txtVmConsoleId.BackColor = Color.Empty;
+			}
+
 			if(cancel)
 				tabMain.SelectedIndex = 0;
 			return !cancel;
@@ -625,8 +636,10 @@ namespace Plugin.RDP.UI
 					}
 		}
 
-		private void udPort_ValueChanged(Object sender, EventArgs e)
-			=> udPort.Font = udPort.Value == 3389 ? new Font(Control.DefaultFont, FontStyle.Regular) : new Font(Control.DefaultFont, FontStyle.Bold);
+		private void udPort_ValueChanged(Object sender, EventArgs e){
+			Int32 defaultPort = cbVmConsole.Checked ? RdpClient.DefaultVMConsoleConnectPort : RdpClient.DefaultRDPPort;
+			udPort.Font = udPort.Value == defaultPort ? new Font(Control.DefaultFont, FontStyle.Regular) : new Font(Control.DefaultFont, FontStyle.Bold);
+		}
 
 		private void ddlConnectionSpeed_SelectedIndexChanged(Object sender, EventArgs e)
 		{
