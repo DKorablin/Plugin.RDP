@@ -412,11 +412,6 @@ namespace Plugin.RDP.UI
 		private void DesktopSizeOptions_Changed(Object sender, EventArgs e)
 			=> this.SaveDesktopSize();
 
-		private void udPort_ValueChanged(Object sender, EventArgs e){
-			Int32 defaultPort = cbVmConsole.Checked ? RdpClient.DefaultVMConsoleConnectPort : RdpClient.DefaultRDPPort;
-			udPort.Font = udPort.Value == defaultPort ? new Font(Control.DefaultFont, FontStyle.Regular) : new Font(Control.DefaultFont, FontStyle.Bold);
-		}
-
 		private void ddlConnectionSpeed_SelectedIndexChanged(Object sender, EventArgs e)
 		{
 			TS_PERF flags = TS_PERF.DISABLE_NOTHING;
@@ -452,7 +447,10 @@ namespace Plugin.RDP.UI
 		}
 
 		private void cbVmConsole_CheckedChanged(Object sender, EventArgs e)
-			=> txtVmConsoleId.Visible = cbVmConsole.Checked;
+		{
+			txtVmConsoleId.Visible = cbVmConsole.Checked;
+			udPort.DefaultValue = cbVmConsole.Checked ? RdpClient.DefaultVMConsoleConnectPort : RdpClient.DefaultRDPPort;
+		}
 
 		private void tsdbIcon_DropDownItemClicked(Object sender, ToolStripItemClickedEventArgs e)
 		{

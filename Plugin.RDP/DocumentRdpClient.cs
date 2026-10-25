@@ -331,7 +331,6 @@ namespace Plugin.RDP
 
 			if(this.RdpClientRow.ConnectionTypeI == ConnectionType.VirtualMachineConsoleConnect)
 			{
-				advanced.RDPPort = RdpClient.DefaultVMConsoleConnectPort;
 				advanced.ConnectToServerConsole = true;
 				if(advanced6 != null)
 				{

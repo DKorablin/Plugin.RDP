@@ -12,7 +12,11 @@ namespace Plugin.RDP.UI
 		public Decimal DefaultValue
 		{
 			get => this._defaultValue;
-			set => this.Value = this._defaultValue = value;
+			set
+			{
+				this._defaultValue = value;
+				this.ToggleColor();
+			}
 		}
 
 		public new Decimal Value

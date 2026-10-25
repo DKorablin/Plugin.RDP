@@ -13,9 +13,6 @@ namespace Plugin.RDP.Bll
 	/// <remarks>https://learn.microsoft.com/en-us/azure/virtual-desktop/rdp-properties</remarks>
 	internal class RdpFile
 	{
-		/// <summary>Port used by Hyper-V virtual machine console connections</summary>
-		private const Int32 VmConsolePort = 2179;
-
 		/// <summary>Description that mstsc.exe uses for DPAPI protected passwords</summary>
 		private const String PasswordDescription = "psw";
 
@@ -71,7 +68,7 @@ namespace Plugin.RDP.Bll
 			Boolean isVmConsole = !clientRow.IsConnectionTypeNull() && clientRow.ConnectionTypeI == ConnectionType.VirtualMachineConsoleConnect;
 
 			String server = String.IsNullOrEmpty(clientRow.Server) ? treeRow.Name : clientRow.Server;
-			Int32 port = isVmConsole ? VmConsolePort : clientRow.ConnectPortI;
+			Int32 port = clientRow.ConnectPortI;
 			result.SetString("full address", port == RdpClient.DefaultRDPPort ? server : RdpFile.FormatAddress(server, port));
 			result.SetInt32("server port", port);
 
@@ -168,9 +165,15 @@ namespace Plugin.RDP.Bll
 			if(String.IsNullOrWhiteSpace(address))
 				throw new InvalidDataException("The file does not contain a server address (full address)");
 
+			//Connection type is set before the port, so the default port of the connection type is not stored
+			String pcb = this.GetString("pcb");
+			clientRow.ConnectionTypeI = String.IsNullOrEmpty(pcb) ? ConnectionType.Normal : ConnectionType.VirtualMachineConsoleConnect;
+			if(!String.IsNullOrEmpty(pcb))
+				clientRow.VirtualMachineId = pcb;
+
 			RdpFile.ParseAddress(address, out String server, out Int32? port);
 			clientRow.Server = server;
-			clientRow.ConnectPortI = port ?? this.GetInt32("server port") ?? RdpClient.DefaultRDPPort;
+			clientRow.ConnectPortI = port ?? this.GetInt32("server port") ?? 0;
 
 			String userName = this.GetString("username") ?? String.Empty;
 			String domain = this.GetString("domain");
@@ -189,11 +192,6 @@ namespace Plugin.RDP.Bll
 				? (AuthenticationLevel)authenticationLevel.Value
 				: AuthenticationLevel.NoAuthentication;
 			clientRow.ConnectConsole = this.GetBoolean("administrative session") ?? this.GetBoolean("connect to console") ?? false;
-
-			String pcb = this.GetString("pcb");
-			clientRow.ConnectionTypeI = String.IsNullOrEmpty(pcb) ? ConnectionType.Normal : ConnectionType.VirtualMachineConsoleConnect;
-			if(!String.IsNullOrEmpty(pcb))
-				clientRow.VirtualMachineId = pcb;
 
 			//Display
 			clientRow.ColorDepthI = this.GetInt32("session bpp") ?? RdpClient.DefaultColorDepth;

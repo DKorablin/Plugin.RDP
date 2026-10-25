@@ -436,7 +436,6 @@
             0,
             0,
             0});
-			this.udPort.ValueChanged += new System.EventHandler(this.udPort_ValueChanged);
 			// 
 			// label6
 			// 

@@ -76,7 +76,12 @@ namespace Plugin.RDP.Bll
 			{
 				base.OnColumnChanged(e);
 				if(e.Row.RowState != DataRowState.Detached && IsValueChanged(this._previousValue, e.ProposedValue))
-					((RdpClientRow)e.Row).OnPropertyChanged(GetPropertyName(e.Row, e.Column));
+				{
+					RdpClientRow row = (RdpClientRow)e.Row;
+					row.OnPropertyChanged(GetPropertyName(e.Row, e.Column));
+					if(e.Column == this.ConnectionTypeColumn && row.IsConnectPortNull())
+						row.OnPropertyChanged(nameof(RdpClientRow.ConnectPortI));//Default port depends on the connection type
+				}
 			}
 		}
 
@@ -211,13 +216,20 @@ namespace Plugin.RDP.Bll
 				}
 			}
 
-			[DefaultValue(RDP.RdpClient.DefaultRDPPort)]
+			/// <summary>Port used when the user hasn't specified it, depends on the connection type</summary>
+			public Int32 DefaultConnectPort
+				=> this.ConnectionTypeI == Plugin.RDP.ConnectionType.VirtualMachineConsoleConnect
+					? RDP.RdpClient.DefaultVMConsoleConnectPort
+					: RDP.RdpClient.DefaultRDPPort;
+
+			/// <summary>Connection port, the default port of the connection type is not stored</summary>
+			[DefaultValue(0)]
 			public Int32 ConnectPortI
 			{
-				get => this.IsConnectPortNull() ? RDP.RdpClient.DefaultRDPPort : this.ConnectPort;
+				get => this.IsConnectPortNull() ? this.DefaultConnectPort : this.ConnectPort;
 				set
 				{
-					if(value == 0 || value == RDP.RdpClient.DefaultRDPPort)
+					if(value == 0 || value == this.DefaultConnectPort)
 						this.SetConnectPortNull();
 					else
 						this.ConnectPort = value;

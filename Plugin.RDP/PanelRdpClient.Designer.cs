@@ -100,8 +100,8 @@
 			// 
 			this.tsMain.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
 			this.tsMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tsbnAdd,
-            this.tsbnDelete});
+			this.tsbnAdd,
+			this.tsbnDelete});
 			this.tsMain.Location = new System.Drawing.Point(0, 0);
 			this.tsMain.Name = "tsMain";
 			this.tsMain.Size = new System.Drawing.Size(150, 25);
@@ -112,9 +112,9 @@
 			// 
 			this.tsbnAdd.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
 			this.tsbnAdd.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tsmiAddClient,
-            this.tsmiAddNode,
-            this.tsmiImportRdp});
+			this.tsmiAddClient,
+			this.tsmiAddNode,
+			this.tsmiImportRdp});
 			this.tsbnAdd.Image = global::Plugin.RDP.Properties.Resources.iconClientNew;
 			this.tsbnAdd.ImageTransparentColor = System.Drawing.Color.Magenta;
 			this.tsbnAdd.Name = "tsbnAdd";
@@ -181,13 +181,13 @@
 			// cmsClient
 			// 
 			this.cmsClient.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tsmiClientConnect,
-            this.tsmiClientFocus,
-            this.tsmiClientDisconnect,
-            this.tsmiClientLogOff,
-            this.tsmiClientListSessions,
-            this.tsmiClientExportRdp,
-            this.tsmiClientProperties});
+			this.tsmiClientConnect,
+			this.tsmiClientFocus,
+			this.tsmiClientDisconnect,
+			this.tsmiClientLogOff,
+			this.tsmiClientListSessions,
+			this.tsmiClientExportRdp,
+			this.tsmiClientProperties});
 			this.cmsClient.Name = "cmsClient";
 			this.cmsClient.Size = new System.Drawing.Size(181, 158);
 			this.cmsClient.Opening += new System.ComponentModel.CancelEventHandler(this.cmsClient_Opening);
@@ -251,7 +251,7 @@
 			// cmsNode
 			// 
 			this.cmsNode.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tsmiNodeAddNode,
+			this.tsmiNodeAddNode,
 			this.tsmiNodeAddClient,
 			this.tsmiNodeImportRdp});
 			this.cmsNode.Name = "cmsNode";
