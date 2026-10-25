@@ -113,6 +113,16 @@ namespace Plugin.RDP.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap iconFolder {
+            get {
+                object obj = ResourceManager.GetObject("iconFolder", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap iconFolderNew {
             get {
                 object obj = ResourceManager.GetObject("iconFolderNew", resourceCulture);

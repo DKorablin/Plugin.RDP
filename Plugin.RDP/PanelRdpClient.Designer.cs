@@ -239,11 +239,9 @@
 			// 
 			// ilList
 			// 
-			this.ilList.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("ilList.ImageStream")));
+			this.ilList.ColorDepth = System.Windows.Forms.ColorDepth.Depth32Bit;
+			this.ilList.ImageSize = new System.Drawing.Size(16, 16);
 			this.ilList.TransparentColor = System.Drawing.Color.Magenta;
-			this.ilList.Images.SetKeyName(0, "iconFolder.bmp");
-			this.ilList.Images.SetKeyName(1, "iconClientDisconnected.bmp");
-			this.ilList.Images.SetKeyName(2, "iconClientConnected.bmp");
 			// 
 			// bgList
 			// 

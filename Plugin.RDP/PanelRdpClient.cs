@@ -7,6 +7,7 @@ using Plugin.RDP.Bll;
 using Plugin.RDP.UI;
 using SAL.Windows;
 using System.Diagnostics;
+using System.Drawing;
 using Plugin.RDP.Properties;
 
 namespace Plugin.RDP
@@ -21,8 +22,32 @@ namespace Plugin.RDP
 
 		public PanelRdpClient()
 		{
-			InitializeComponent();
+			this.InitializeComponent();
+			foreach(RdpClientTreeNode.TreeImageList key in Enum.GetValues(typeof(RdpClientTreeNode.TreeImageList)))
+				ilList.Images.Add(key.ToString(), PanelRdpClient.GetTreeImage(key));//GetValues is sorted by value so the image index matches the enum value
 			gridSearch.TreeView = tvList;
+		}
+
+		/// <summary>Get the tree node image</summary>
+		/// <param name="key">Tree node image index</param>
+		/// <returns>Image for the tree image list</returns>
+		private static Image GetTreeImage(RdpClientTreeNode.TreeImageList key)
+		{
+			switch(key)
+			{
+			case RdpClientTreeNode.TreeImageList.Folder:
+				return Resources.iconFolder;
+			case RdpClientTreeNode.TreeImageList.ClientDisconnected:
+				return Resources.iconClientDisconnected.ToBitmap();
+			case RdpClientTreeNode.TreeImageList.ClientConnected:
+				return Resources.iconClientConnected.ToBitmap();
+			case RdpClientTreeNode.TreeImageList.Client2Disconnected:
+				return Resources.iconRDP2Disconnected;
+			case RdpClientTreeNode.TreeImageList.Client2Connected:
+				return Resources.iconRDP2Connected;
+			default:
+				throw new NotImplementedException($"Tree image \"{key}\" not implemented");
+			}
 		}
 
 		protected override void OnCreateControl()
