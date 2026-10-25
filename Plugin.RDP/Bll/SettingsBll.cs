@@ -26,7 +26,15 @@ namespace Plugin.RDP.Bll
 					base.DataSet.ReadXml(stream);
 
 			foreach(SettingsDataSet.RdpClientRow clientRow in base.DataSet.RdpClient)
+			{
+				if(!clientRow.IsRedirectAudioCaptureNull())
+				{//Legacy: audio capture was stored in a separate column
+					if(clientRow.RedirectAudioCapture)
+						clientRow.RedirectI |= RedirectFlags.AudioCapture;
+					clientRow.SetRedirectAudioCaptureNull();
+				}
 				clientRow.Validate();//Errors are not stored in the settings file
+			}
 		}
 
 		public override void Save()

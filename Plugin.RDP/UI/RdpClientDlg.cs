@@ -190,7 +190,6 @@ namespace Plugin.RDP.UI
 			this.Bind(udMinutesToIdle, nameof(NumericUpDown.Value), nameof(SettingsDataSet.RdpClientRow.MinutesToIdle), DataSourceUpdateMode.OnValidation);
 
 			this.BindChecked(cbConsole, nameof(SettingsDataSet.RdpClientRow.ConnectConsole));
-			this.BindChecked(cbRedirectAudioCapture, nameof(SettingsDataSet.RdpClientRow.RedirectAudioCapture));
 			this.BindChecked(cbRunApplication, nameof(SettingsDataSet.RdpClientRow.RunApplication));
 			this.BindChecked(cbRunApplicationMaximize, nameof(SettingsDataSet.RdpClientRow.RunApplicationMaximize));
 			this.BindChecked(cbUseGateway, nameof(SettingsDataSet.RdpClientRow.GatewayEnabled));
@@ -207,6 +206,7 @@ namespace Plugin.RDP.UI
 			this.BindFlag(cbRedirectSmartCards, nameof(SettingsDataSet.RdpClientRow.RedirectI), RedirectFlags.SmartCards);
 			this.BindFlag(cbRedirectClipboard, nameof(SettingsDataSet.RdpClientRow.RedirectI), RedirectFlags.Clipboard);
 			this.BindFlag(cbRedirectPoS, nameof(SettingsDataSet.RdpClientRow.RedirectI), RedirectFlags.PointOfService);
+			this.BindFlag(cbRedirectAudioCapture, nameof(SettingsDataSet.RdpClientRow.RedirectI), RedirectFlags.AudioCapture);
 
 			this.BindFlag(cbDisableWallpaper, nameof(SettingsDataSet.RdpClientRow.PerformanceFlagsI), TS_PERF.DISABLE_WALLPAPER);
 			this.BindFlag(cbEnableFontSmoothing, nameof(SettingsDataSet.RdpClientRow.PerformanceFlagsI), TS_PERF.ENABLE_FONT_SMOOTHING);

@@ -199,6 +199,9 @@ namespace Plugin.RDP
 		[DllImport("kernel32.dll")]
 		public static extern IntPtr LocalFree(IntPtr hMem);
 
+		/// <summary>Sent when the cursor is in an inactive window and the user presses a mouse button</summary>
+		public const Int32 WM_MOUSEACTIVATE = 0x0021;
+
 		/// <summary>An object is shown</summary>
 		public const UInt32 EVENT_OBJECT_SHOW = 0x8002;
 		/// <summary>The callback function is not mapped into the address space of the process that generates the event</summary>

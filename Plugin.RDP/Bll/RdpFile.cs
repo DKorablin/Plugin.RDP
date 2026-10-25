@@ -117,7 +117,7 @@ namespace Plugin.RDP.Bll
 
 			result.SetInt32("audiomode", (Int32)clientRow.RedirectAudioI);
 			result.SetInt32("audioqualitymode", (Int32)clientRow.RedirectAudioQualityI);
-			result.SetBoolean("audiocapturemode", clientRow.RedirectAudioCapture);
+			result.SetBoolean("audiocapturemode", (redirect & RedirectFlags.AudioCapture) == RedirectFlags.AudioCapture);
 			result.SetInt32("keyboardhook", (Int32)clientRow.KeyboardHookI);
 
 			//Experience
@@ -219,13 +219,14 @@ namespace Plugin.RDP.Bll
 				redirect |= RedirectFlags.Clipboard;
 			if(this.GetBoolean("redirectposdevices") == true)
 				redirect |= RedirectFlags.PointOfService;
+			if(this.GetBoolean("audiocapturemode") == true)
+				redirect |= RedirectFlags.AudioCapture;
 			clientRow.RedirectI = redirect;
 
 			Int32 audioMode = this.GetInt32("audiomode") ?? 0;
 			clientRow.RedirectAudioI = audioMode >= 0 && audioMode <= 2 ? (RdpClient.AudioRedirectionMode)audioMode : RdpClient.AudioRedirectionMode.Redirect;
 			Int32 audioQuality = this.GetInt32("audioqualitymode") ?? 0;
 			clientRow.RedirectAudioQualityI = audioQuality >= 0 && audioQuality <= 2 ? (RdpClient.AudioRedirectionQuality)audioQuality : RdpClient.AudioRedirectionQuality.Dynamic;
-			clientRow.RedirectAudioCapture = this.GetBoolean("audiocapturemode") ?? false;
 			Int32 keyboardHook = this.GetInt32("keyboardhook") ?? 2;
 			clientRow.KeyboardHookI = keyboardHook >= 0 && keyboardHook <= 2 ? (RdpClient.KeyboardHookMode)keyboardHook : RdpClient.KeyboardHookMode.FullScreen;
 

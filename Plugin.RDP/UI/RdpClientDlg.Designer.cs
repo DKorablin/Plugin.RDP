@@ -463,7 +463,6 @@
 			tabLocal.Controls.Add(this.ddlKeyboardHook);
 			tabLocal.Controls.Add(label13);
 			tabLocal.Controls.Add(this.ddlRedirectAudioQuality);
-			tabLocal.Controls.Add(this.cbRedirectAudioCapture);
 			tabLocal.Controls.Add(label12);
 			tabLocal.Controls.Add(label7);
 			tabLocal.Controls.Add(this.ddlRedirectAudio);
@@ -486,7 +485,7 @@
             "On the local computer",
             "On the remote computer",
             "In full screen mode only"});
-			this.ddlKeyboardHook.Location = new System.Drawing.Point(120, 98);
+			this.ddlKeyboardHook.Location = new System.Drawing.Point(120, 70);
 			this.ddlKeyboardHook.Margin = new System.Windows.Forms.Padding(4);
 			this.ddlKeyboardHook.Name = "ddlKeyboardHook";
 			this.ddlKeyboardHook.Size = new System.Drawing.Size(216, 24);
@@ -495,7 +494,7 @@
 			// label13
 			// 
 			label13.AutoSize = true;
-			label13.Location = new System.Drawing.Point(8, 102);
+			label13.Location = new System.Drawing.Point(8, 74);
 			label13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			label13.Name = "label13";
 			label13.Size = new System.Drawing.Size(108, 17);
@@ -512,7 +511,7 @@
             "Dynamic",
             "High",
             "Medium"});
-			this.ddlRedirectAudioQuality.Location = new System.Drawing.Point(120, 65);
+			this.ddlRedirectAudioQuality.Location = new System.Drawing.Point(120, 37);
 			this.ddlRedirectAudioQuality.Margin = new System.Windows.Forms.Padding(4);
 			this.ddlRedirectAudioQuality.Name = "ddlRedirectAudioQuality";
 			this.ddlRedirectAudioQuality.Size = new System.Drawing.Size(216, 24);
@@ -521,18 +520,18 @@
 			// cbRedirectAudioCapture
 			// 
 			this.cbRedirectAudioCapture.AutoSize = true;
-			this.cbRedirectAudioCapture.Location = new System.Drawing.Point(120, 5);
+			this.cbRedirectAudioCapture.Location = new System.Drawing.Point(239, 4);
 			this.cbRedirectAudioCapture.Margin = new System.Windows.Forms.Padding(4);
 			this.cbRedirectAudioCapture.Name = "cbRedirectAudioCapture";
 			this.cbRedirectAudioCapture.Size = new System.Drawing.Size(118, 21);
-			this.cbRedirectAudioCapture.TabIndex = 4;
+			this.cbRedirectAudioCapture.TabIndex = 6;
 			this.cbRedirectAudioCapture.Text = "&Audio capture";
 			this.cbRedirectAudioCapture.UseVisualStyleBackColor = true;
 			// 
 			// label12
 			// 
 			label12.AutoSize = true;
-			label12.Location = new System.Drawing.Point(8, 69);
+			label12.Location = new System.Drawing.Point(8, 41);
 			label12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			label12.Name = "label12";
 			label12.Size = new System.Drawing.Size(98, 17);
@@ -542,7 +541,7 @@
 			// label7
 			// 
 			label7.AutoSize = true;
-			label7.Location = new System.Drawing.Point(8, 37);
+			label7.Location = new System.Drawing.Point(8, 9);
 			label7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			label7.Name = "label7";
 			label7.Size = new System.Drawing.Size(104, 17);
@@ -559,7 +558,7 @@
             "Bring to this computer",
             "Leave at remote computer",
             "Do not play"});
-			this.ddlRedirectAudio.Location = new System.Drawing.Point(120, 33);
+			this.ddlRedirectAudio.Location = new System.Drawing.Point(120, 5);
 			this.ddlRedirectAudio.Margin = new System.Windows.Forms.Padding(4);
 			this.ddlRedirectAudio.Name = "ddlRedirectAudio";
 			this.ddlRedirectAudio.Size = new System.Drawing.Size(216, 24);
@@ -571,11 +570,11 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
 			gbRedirect.Controls.Add(flowRedirect);
-			gbRedirect.Location = new System.Drawing.Point(4, 132);
+			gbRedirect.Location = new System.Drawing.Point(4, 104);
 			gbRedirect.Margin = new System.Windows.Forms.Padding(4);
 			gbRedirect.Name = "gbRedirect";
 			gbRedirect.Padding = new System.Windows.Forms.Padding(4);
-			gbRedirect.Size = new System.Drawing.Size(339, 116);
+			gbRedirect.Size = new System.Drawing.Size(339, 144);
 			gbRedirect.TabIndex = 0;
 			gbRedirect.TabStop = false;
 			gbRedirect.Text = "Redirect";
@@ -588,12 +587,13 @@
 			flowRedirect.Controls.Add(this.cbRedirectPorts);
 			flowRedirect.Controls.Add(this.cbRedirectSmartCards);
 			flowRedirect.Controls.Add(this.cbRedirectPoS);
+			flowRedirect.Controls.Add(this.cbRedirectAudioCapture);
 			flowRedirect.Dock = System.Windows.Forms.DockStyle.Fill;
 			flowRedirect.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
 			flowRedirect.Location = new System.Drawing.Point(4, 19);
 			flowRedirect.Margin = new System.Windows.Forms.Padding(4);
 			flowRedirect.Name = "flowRedirect";
-			flowRedirect.Size = new System.Drawing.Size(331, 93);
+			flowRedirect.Size = new System.Drawing.Size(331, 121);
 			flowRedirect.TabIndex = 1;
 			// 
 			// cbRedirectDrives

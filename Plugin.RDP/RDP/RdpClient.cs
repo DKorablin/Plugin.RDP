@@ -306,6 +306,9 @@ namespace Plugin.RDP.RDP
 			}
 		}
 
+		public IMsRdpClientAdvancedSettings8 AdvancedSettings9
+			=> this.MsRdpClient8?.AdvancedSettings9;
+
 		private IMsRdpClientNonScriptable3 ClientNonScriptable3
 			=> this.GetOcx() as IMsRdpClientNonScriptable3;
 
@@ -339,7 +342,7 @@ namespace Plugin.RDP.RDP
 			}
 		}
 
-		/*public IMsRdpClientTransportSettings3 TransportSettings3
+		public IMsRdpClientTransportSettings3 TransportSettings3
 		{
 			get
 			{
@@ -350,7 +353,7 @@ namespace Plugin.RDP.RDP
 				else
 					return null;
 			}
-		}*/
+		}
 
 		public IMsTscSecuredSettings SecuredSettings
 		{

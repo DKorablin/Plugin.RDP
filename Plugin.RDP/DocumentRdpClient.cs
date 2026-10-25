@@ -282,6 +282,7 @@ namespace Plugin.RDP
 			IMsRdpClientAdvancedSettings5 advanced5 = this.RdpClient.AdvancedSettings6;
 			IMsRdpClientAdvancedSettings6 advanced6 = this.RdpClient.AdvancedSettings7;
 			IMsRdpClientAdvancedSettings7 advanced7 = this.RdpClient.AdvancedSettings8;
+			IMsRdpClientAdvancedSettings8 advanced8 = this.RdpClient.AdvancedSettings9;
 
 			advanced.RDPPort = this.RdpClientRow.ConnectPortI;
 
@@ -313,7 +314,7 @@ namespace Plugin.RDP
 
 			advanced.MinutesToIdleTimeout = this.RdpClientRow.MinutesToIdle;
 
-			this.RdpClient.SecuredSettings2.AudioRedirectionMode = this.RdpClientRow.RedirectAudioCapture ? 1 : 0;
+			this.RdpClient.SecuredSettings2.AudioRedirectionMode = (Int32)this.RdpClientRow.RedirectAudioI;
 			this.RdpClient.SecuredSettings2.KeyboardHookMode = (Int32)this.RdpClientRow.KeyboardHookI;
 
 			advanced4.AuthenticationLevel = (UInt32)this.RdpClientRow.AuthenticationLevelI;
@@ -328,6 +329,9 @@ namespace Plugin.RDP
 
 			if(advanced6 != null)
 				advanced6.EnableCredSspSupport = true;
+
+			if(advanced8 != null)
+				advanced8.AudioCaptureRedirectionMode = (this.RdpClientRow.RedirectI & RedirectFlags.AudioCapture) == RedirectFlags.AudioCapture;
 
 			if(this.RdpClientRow.ConnectionTypeI == ConnectionType.VirtualMachineConsoleConnect)
 			{
