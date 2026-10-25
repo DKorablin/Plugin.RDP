@@ -120,7 +120,6 @@
 			this.tabMain = new System.Windows.Forms.TabControl();
 			this.error = new System.Windows.Forms.ErrorProvider(this.components);
 			this.tsMain = new System.Windows.Forms.ToolStrip();
-			this.tsbnSave = new System.Windows.Forms.ToolStripButton();
 			this.tsdbIcon = new System.Windows.Forms.ToolStripDropDownButton();
 			this.tsmiIcon2 = new System.Windows.Forms.ToolStripMenuItem();
 			this.tsmiIcon1 = new System.Windows.Forms.ToolStripMenuItem();
@@ -1321,21 +1320,11 @@
 			this.tsMain.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
 			this.tsMain.ImageScalingSize = new System.Drawing.Size(20, 20);
 			this.tsMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tsbnSave,
             this.tsdbIcon});
 			this.tsMain.Location = new System.Drawing.Point(0, 0);
 			this.tsMain.Name = "tsMain";
 			this.tsMain.Size = new System.Drawing.Size(389, 27);
 			this.tsMain.TabIndex = 5;
-			// 
-			// tsbnSave
-			// 
-			this.tsbnSave.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-			this.tsbnSave.Image = global::Plugin.RDP.Properties.Resources.FileSave;
-			this.tsbnSave.ImageTransparentColor = System.Drawing.Color.Magenta;
-			this.tsbnSave.Name = "tsbnSave";
-			this.tsbnSave.Size = new System.Drawing.Size(24, 24);
-			this.tsbnSave.Click += new System.EventHandler(this.tsbnSave_Click);
 			// 
 			// tsdbIcon
 			// 
@@ -1466,7 +1455,6 @@
 		private System.Windows.Forms.TextBox txtVmConsoleId;
 		private System.Windows.Forms.CheckBox cbVmConsole;
 		private System.Windows.Forms.ToolStrip tsMain;
-		private System.Windows.Forms.ToolStripButton tsbnSave;
 		private System.Windows.Forms.ToolStripDropDownButton tsdbIcon;
 		private System.Windows.Forms.ToolStripMenuItem tsmiIcon2;
 		private System.Windows.Forms.ToolStripMenuItem tsmiIcon1;

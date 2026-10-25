@@ -14,6 +14,8 @@ namespace Plugin.RDP.UI
 		private readonly NumericUpDown udWidth;
 		private readonly NumericUpDown udHeight;
 
+		public event EventHandler Changed;
+
 		public Size CustomSize
 		{
 			get => new Size((Int32)udWidth.Value, (Int32)udHeight.Value);
@@ -28,6 +30,8 @@ namespace Plugin.RDP.UI
 		{
 			this.udWidth = CreateSizeInput("udWidth");
 			this.udHeight = CreateSizeInput("udHeight");
+			this.udWidth.ValueChanged += this.udSize_ValueChanged;
+			this.udHeight.ValueChanged += this.udSize_ValueChanged;
 
 			FlowLayoutPanel flow = new FlowLayoutPanel()
 			{
@@ -57,6 +61,9 @@ namespace Plugin.RDP.UI
 
 		public void ApplyTo(DesktopSizeParser value)
 			=> value.Size = this.CustomSize;
+
+		private void udSize_ValueChanged(Object sender, EventArgs e)
+			=> this.Changed?.Invoke(this, EventArgs.Empty);
 
 		private static Label CreateLabel(String text)
 			=> new Label()

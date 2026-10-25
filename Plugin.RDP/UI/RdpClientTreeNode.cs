@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using Plugin.RDP.Bll;
 using AlphaOmega.Windows.Forms;
 
@@ -46,7 +47,10 @@ namespace Plugin.RDP.UI
 		/// <param name="row">Server link for testing</param>
 		public RdpClientTreeNode(SettingsDataSet.TreeRow row)
 			: this(row.Name, row.ElementType)
-			=> this.Tag = row;
+		{
+			this.Tag = row;
+			this.UpdateState();
+		}
 
 		public RdpClientTreeNode(String text, ElementType type)
 			: base(text)
@@ -66,6 +70,32 @@ namespace Plugin.RDP.UI
 
 		/// <summary>This is a folder</summary>
 		public Boolean IsFolderNode => this.ImageIndex == TreeImageList.Folder;
+
+		/// <summary>The client settings are invalid and the client can't connect</summary>
+		public Boolean IsInvalid
+		{
+			get
+			{
+				SettingsDataSet.RdpClientRow clientRow = this.IsFolderNode || this.Tag == null
+					? null
+					: this.Tag.RdpClientRow;
+				return clientRow != null && clientRow.HasErrors;
+			}
+		}
+
+		/// <summary>Show the client as disabled with validation errors in the tooltip when settings are invalid</summary>
+		public void UpdateState()
+		{
+			if(this.IsInvalid)
+			{
+				this.ForeColor = SystemColors.GrayText;
+				this.ToolTipText = this.Tag.RdpClientRow.Error;
+			} else
+			{
+				this.ForeColor = Color.Empty;
+				this.ToolTipText = String.Empty;
+			}
+		}
 
 		/// <summary>The client is connected to the server</summary>
 		public Boolean IsConnected

@@ -168,6 +168,7 @@
 			this.tvList.Location = new System.Drawing.Point(0, 25);
 			this.tvList.Name = "tvList";
 			this.tvList.SelectedImageIndex = 0;
+			this.tvList.ShowNodeToolTips = true;
 			this.tvList.Size = new System.Drawing.Size(150, 125);
 			this.tvList.TabIndex = 1;
 			this.tvList.HideSelection = false;

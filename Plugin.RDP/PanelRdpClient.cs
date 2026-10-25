@@ -57,7 +57,10 @@ namespace Plugin.RDP
 					parentNode.Expand();
 				}
 			} else
+			{
 				node.Text = e.Row.Name;
+				node.UpdateState();
+			}
 			node.EnsureVisible();
 		}
 
@@ -115,7 +118,21 @@ namespace Plugin.RDP
 		}
 
 		private void Details_CloseRequested(Object sender, EventArgs e)
-			=> this.CloseDetails();
+		{
+			SettingsDataSet.TreeRow discardRow = sender is RdpClientDlg editor && editor.IsDiscardable
+				? editor.Row
+				: null;
+
+			this.CloseDetails();
+
+			if(discardRow != null)
+			{//The user closed the editor of the just created client without specifying required settings
+				RdpClientTreeNode node = tvList.FindNode(discardRow.TreeID);
+				this.Plugin.Settings.XmlSettings.RemoveNode(discardRow);
+				this.Plugin.Settings.XmlSettings.Save();
+				node?.Remove();
+			}
+		}
 
 		private void splitMain_MouseDoubleClick(Object sender, MouseEventArgs e)
 		{
@@ -177,18 +194,10 @@ namespace Plugin.RDP
 
 		private void tsbnAdd_DropDownItemClicked(Object sender, ToolStripItemClickedEventArgs e)
 		{
-			if(e.ClickedItem == tsmiAddClient || e.ClickedItem == tsmiNodeAddClient)
-			{
-				SettingsDataSet.TreeRow parentRow = tvList.SelectedNode != null && tvList.SelectedNode.ElementType == ElementType.Tree
-					? tvList.SelectedNode.Tag
-					: null;
-
-				RdpClientDlg editor = new RdpClientDlg(this.Plugin);
-				editor.ToggleNewClientRow(parentRow);
-				this.ShowDetails(editor);
-			} else if(e.ClickedItem == tsmiAddNode || e.ClickedItem == tsmiNodeAddNode)
-			{
-				RdpClientTreeNode node = new RdpClientTreeNode(null, ElementType.Tree);
+			Boolean isAddClient = e.ClickedItem == tsmiAddClient || e.ClickedItem == tsmiNodeAddClient;
+			if(isAddClient || e.ClickedItem == tsmiAddNode || e.ClickedItem == tsmiNodeAddNode)
+			{//The row is created after the user enters the node name (tvList_AfterLabelEdit)
+				RdpClientTreeNode node = new RdpClientTreeNode(null, isAddClient ? ElementType.Client : ElementType.Tree);
 				if(tvList.SelectedNode != null && tvList.SelectedNode.ElementType == ElementType.Tree)
 				{
 					tvList.SelectedNode.Nodes.Add(node);
@@ -308,7 +317,7 @@ namespace Plugin.RDP
 					{
 						MessageBox.Show("There is already node with the same name in this branch", e.Label, MessageBoxButtons.OK, MessageBoxIcon.Stop);
 						e.CancelEdit = true;
-						if(node.Tag != null)
+						if(node.Tag == null)//Deleting a node if the user tried to create it with existing name
 							node.Remove();
 						return;
 					}
@@ -316,14 +325,25 @@ namespace Plugin.RDP
 			}
 
 			if(node.Tag != null)//Modifying a previously created node
-				this.Plugin.Settings.XmlSettings.ModifyTreeNodeName(node.Tag, e.Label);
+				SettingsBll.ModifyTreeNodeName(node.Tag, e.Label);
 			else
 			{//Adding a new node
 				SettingsDataSet.TreeRow parentRow = node.Parent == null ? null : node.Parent.Tag;
 				switch(node.ElementType)
 				{
-				case ElementType.Client://Adding a new client
-					throw new NotImplementedException();
+				case ElementType.Client://Adding a new client and opening its settings
+					{
+						SettingsDataSet.TreeRow newRow = this.Plugin.Settings.XmlSettings.CreateClient(parentRow == null ? (Int32?)null : parentRow.TreeID, e.Label);
+						node.Tag = newRow;
+						node.Text = e.Label;
+						node.UpdateState();
+						tvList.SelectedNode = node;
+
+						RdpClientDlg editor = new RdpClientDlg(this.Plugin);
+						editor.ToggleRdpClientRow(newRow, true);
+						this.ShowDetails(editor);
+					}
+					break;
 				case ElementType.Tree://Adding a new node to the tree
 					{
 						SettingsDataSet.TreeRow newRow = this.Plugin.Settings.XmlSettings.ModifyTreeNode(null, parentRow == null ? (Int32?)null : parentRow.TreeID, ElementType.Tree, e.Label);
@@ -452,10 +472,12 @@ namespace Plugin.RDP
 				this.Plugin.Settings.XmlSettings.OnClientChangeState(row.TreeID, RdpStateEventArgs.StateType.Focus);
 			} else if(e.ClickedItem == tsmiClientConnect)
 			{//Connecting a client to a server
-				if(row.ElementType == ElementType.Client)
-					_ = this.Plugin.CreateWindow<DocumentRdpClient,DocumentRdpClientSettings>(new DocumentRdpClientSettings() { TreeId = row.TreeID });
-				else
+				if(row.ElementType != ElementType.Client)
 					throw new InvalidOperationException();
+				else if(tvList.SelectedNode.IsInvalid)//Required settings are not specified, show them instead of connecting
+					this.cmsClient_ItemClicked(sender, new ToolStripItemClickedEventArgs(tsmiClientProperties));
+				else
+					_ = this.Plugin.CreateWindow<DocumentRdpClient,DocumentRdpClientSettings>(new DocumentRdpClientSettings() { TreeId = row.TreeID });
 			} else if(e.ClickedItem == tsmiClientDisconnect)
 			{//Disconnecting the client from the server
 				if(MessageBox.Show($"Are you sure you want to disconnect from client {row.Name}?", this.Window.Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)

@@ -1,11 +1,8 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using AlphaOmega.Bll;
-using Plugin.RDP.UI;
 
 namespace Plugin.RDP.Bll
 {
@@ -27,6 +24,9 @@ namespace Plugin.RDP.Bll
 			using(Stream stream = this._plugin.HostWindows.Plugins.Settings(this._plugin).LoadAssemblyBlob(Constant.SettingsFileName))
 				if(stream != null)
 					base.DataSet.ReadXml(stream);
+
+			foreach(SettingsDataSet.RdpClientRow clientRow in base.DataSet.RdpClient)
+				clientRow.Validate();//Errors are not stored in the settings file
 		}
 
 		public override void Save()
@@ -141,7 +141,7 @@ namespace Plugin.RDP.Bll
 		/// <param name="row">Row to change</param>
 		/// <param name="name">Node name</param>
 		/// <returns>Node change successful</returns>
-		public Boolean ModifyTreeNodeName(SettingsDataSet.TreeRow row, String name)
+		public static Boolean ModifyTreeNodeName(SettingsDataSet.TreeRow row, String name)
 		{
 			_ = row ?? throw new ArgumentNullException(nameof(row));
 			if(String.IsNullOrEmpty(name))
@@ -157,34 +157,36 @@ namespace Plugin.RDP.Bll
 			return result;
 		}
 
-		/// <summary>Change or add client settings</summary>
-		/// <param name="treeRow">Tree row whose client settings need to be changed</param>
-		/// <param name="server">Server name</param>
-		/// <param name="userName">Login of the client connecting to the server</param>
-		public void ModifyClient(SettingsDataSet.TreeRow treeRow, RdpClientDlg dlg)
+		/// <summary>Create a new client with default settings</summary>
+		/// <remarks>The client is invalid until the remote computer is specified</remarks>
+		/// <param name="parentTreeId">The parent node ID or null to add client to the root</param>
+		/// <param name="name">The client node name</param>
+		/// <returns>The tree row of the created client</returns>
+		public SettingsDataSet.TreeRow CreateClient(Int32? parentTreeId, String name)
 		{
-			if(treeRow.ElementType != ElementType.Client)
-				throw new InvalidOperationException();
+			SettingsDataSet.TreeRow treeRow = this.ModifyTreeNode(null, parentTreeId, ElementType.Client, name);
 
-			SettingsDataSet.RdpClientRow clientRow = this.GetClientRow(treeRow.TreeID);
-			if(clientRow == null)
-				clientRow = base.DataSet.RdpClient.NewRdpClientRow();
-
+			SettingsDataSet.RdpClientRow clientRow = base.DataSet.RdpClient.NewRdpClientRow();
 			clientRow.BeginEdit();
+			clientRow.ResetToDefaults();
 			clientRow.TreeID = treeRow.TreeID;
+			clientRow.Server = String.Empty;
+			clientRow.UserName = Environment.UserName;
+			clientRow.DomainI = Environment.UserDomainName;
+			base.DataSet.RdpClient.AddRdpClientRow(clientRow);
 
-			Type rowType = clientRow.GetType();
-			foreach(PropertyInfo property in dlg.GetType().GetProperties(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public))
-				if(property.IsDefined(typeof(BindableAttribute), false))
-				{
-					Object value = property.GetValue(dlg, null);
-					rowType.InvokeMember(property.Name, BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.SetProperty, null, clientRow, new Object[] { value, });
-				}
+			clientRow.Validate();
+			return treeRow;
+		}
 
-			if(clientRow.RowState == DataRowState.Detached)
-				base.DataSet.RdpClient.AddRdpClientRow(clientRow);
-			else clientRow.AcceptChanges();
+		/// <summary>Validate the changed client settings, save them and notify about the change</summary>
+		/// <param name="treeRow">Tree row of the changed client or folder</param>
+		public void CommitClient(SettingsDataSet.TreeRow treeRow)
+		{
+			_ = treeRow ?? throw new ArgumentNullException(nameof(treeRow));
 
+			this.GetClientRow(treeRow.TreeID)?.Validate();
+			this.Save();
 			this.OnClientUpdated(treeRow);
 		}
 
@@ -205,6 +207,7 @@ namespace Plugin.RDP.Bll
 
 			clientRow.TreeID = treeRow.TreeID;
 			base.DataSet.RdpClient.AddRdpClientRow(clientRow);
+			clientRow.Validate();
 
 			this.OnClientUpdated(treeRow);
 			return treeRow;

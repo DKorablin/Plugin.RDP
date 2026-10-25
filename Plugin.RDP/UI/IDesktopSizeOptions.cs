@@ -7,6 +7,9 @@ namespace Plugin.RDP.UI
 	/// <remarks>Implementation must be a <see cref="System.Windows.Forms.Control"/></remarks>
 	internal interface IDesktopSizeOptions
 	{
+		/// <summary>The user changed the options</summary>
+		event EventHandler Changed;
+
 		/// <summary>Fill the options controls from the stored value</summary>
 		/// <param name="value">Stored desktop size settings which belongs to this mode</param>
 		void LoadFrom(DesktopSizeParser value);

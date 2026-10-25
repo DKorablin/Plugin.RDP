@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Data;
 using System.Linq;
+using System.Reflection;
 using Plugin.RDP.RDP;
 using System.ComponentModel;
 
@@ -15,8 +17,77 @@ namespace Plugin.RDP.Bll
 	}
 	partial class SettingsDataSet
 	{
-		partial class TreeRow
+		/// <summary>Check whether the column value is really changed</summary>
+		/// <remarks>Empty string and <see cref="DBNull"/> are the same value, because bound text controls can't keep null</remarks>
+		/// <param name="previous">The column value before the change</param>
+		/// <param name="current">The new column value</param>
+		/// <returns>The value is different</returns>
+		private static Boolean IsValueChanged(Object previous, Object current)
 		{
+			Boolean IsEmpty(Object value) => value == null || value == DBNull.Value || (value is String str && str.Length == 0);
+
+			return IsEmpty(previous)
+				? !IsEmpty(current)
+				: !previous.Equals(current);
+		}
+
+		/// <summary>Get the name of the row property to notify about the column change</summary>
+		/// <remarks>Typed wrapper with the "I" suffix is preferred, because the editor is bound to the wrappers</remarks>
+		/// <param name="row">The changed row</param>
+		/// <param name="column">The changed column</param>
+		/// <returns>The row property name</returns>
+		private static String GetPropertyName(DataRow row, DataColumn column)
+		{
+			String wrapperName = column.ColumnName + "I";
+			return row.GetType().GetProperty(wrapperName, BindingFlags.Instance | BindingFlags.Public) == null
+				? column.ColumnName
+				: wrapperName;
+		}
+
+		partial class TreeDataTable
+		{
+			private Object _previousValue;
+
+			protected override void OnColumnChanging(DataColumnChangeEventArgs e)
+			{
+				this._previousValue = e.Row.RowState == DataRowState.Detached ? null : e.Row[e.Column];
+				base.OnColumnChanging(e);
+			}
+
+			protected override void OnColumnChanged(DataColumnChangeEventArgs e)
+			{
+				base.OnColumnChanged(e);
+				if(e.Row.RowState != DataRowState.Detached && IsValueChanged(this._previousValue, e.ProposedValue))
+					((TreeRow)e.Row).OnPropertyChanged(GetPropertyName(e.Row, e.Column));
+			}
+		}
+
+		partial class RdpClientDataTable
+		{
+			private Object _previousValue;
+
+			protected override void OnColumnChanging(DataColumnChangeEventArgs e)
+			{
+				this._previousValue = e.Row.RowState == DataRowState.Detached ? null : e.Row[e.Column];
+				base.OnColumnChanging(e);
+			}
+
+			protected override void OnColumnChanged(DataColumnChangeEventArgs e)
+			{
+				base.OnColumnChanged(e);
+				if(e.Row.RowState != DataRowState.Detached && IsValueChanged(this._previousValue, e.ProposedValue))
+					((RdpClientRow)e.Row).OnPropertyChanged(GetPropertyName(e.Row, e.Column));
+			}
+		}
+
+		partial class TreeRow : INotifyPropertyChanged
+		{
+			/// <summary>The column value is changed</summary>
+			public event PropertyChangedEventHandler PropertyChanged;
+
+			internal void OnPropertyChanged(String propertyName)
+				=> this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
 			/// <summary>Тип элемента в узле дерева</summary>
 			public ElementType ElementType
 			{
@@ -55,8 +126,54 @@ namespace Plugin.RDP.Bll
 			}
 		}
 
-		partial class RdpClientRow
+		partial class RdpClientRow : INotifyPropertyChanged, IDataErrorInfo
 		{
+			/// <summary>The column value is changed</summary>
+			public event PropertyChangedEventHandler PropertyChanged;
+
+			/// <summary>All validation errors of the client settings</summary>
+			public String Error
+				=> String.Join(Environment.NewLine, this.GetColumnsInError().Select(c => this.GetColumnError(c)).ToArray());
+
+			String IDataErrorInfo.this[String columnName]
+			{
+				get
+				{
+					DataColumn column = this.Table.Columns[columnName];
+					if(column == null && columnName.EndsWith("I"))
+						column = this.Table.Columns[columnName.Substring(0, columnName.Length - 1)];
+					return column == null ? String.Empty : this.GetColumnError(column);
+				}
+			}
+
+			internal void OnPropertyChanged(String propertyName)
+				=> this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+			/// <summary>Check required settings and store errors in the row</summary>
+			/// <returns>Client settings are valid and the client can connect</returns>
+			public Boolean Validate()
+			{
+				this.ClearErrors();
+				RdpClientDataTable table = (RdpClientDataTable)this.Table;
+
+				if(String.IsNullOrWhiteSpace(this.Server))
+					this.SetColumnError(table.ServerColumn, "You need to specify remote computer to connect");
+				if(String.IsNullOrWhiteSpace(this.UserName))
+					this.SetColumnError(table.UserNameColumn, "You need to specify login");
+				if(this.ConnectionTypeI == Plugin.RDP.ConnectionType.VirtualMachineConsoleConnect && String.IsNullOrWhiteSpace(this.VirtualMachineId))
+					this.SetColumnError(table.VirtualMachineIdColumn, "Virtual machine ID is required");
+
+				return !this.HasErrors;
+			}
+
+			/// <summary>Set default values from <see cref="DefaultValueAttribute"/> of the typed properties</summary>
+			public void ResetToDefaults()
+			{
+				foreach(PropertyInfo property in this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public))
+					if(property.CanWrite && property.GetCustomAttribute<DefaultValueAttribute>(false) is DefaultValueAttribute attr)
+						property.SetValue(this, attr.Value, null);
+			}
+
 			public String PasswordI
 			{
 				get => this.IsPasswordNull() ? null : this.Password;
