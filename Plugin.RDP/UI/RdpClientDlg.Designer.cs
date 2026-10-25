@@ -96,6 +96,7 @@
 			this.txtRunApplicationWorkingDir = new System.Windows.Forms.TextBox();
 			this.txtRunApplicationFilePath = new System.Windows.Forms.TextBox();
 			this.flowDesktopSize = new System.Windows.Forms.FlowLayoutPanel();
+			this.pnlDesktopSizeOptions = new System.Windows.Forms.Panel();
 			this.rbSizeCustom = new System.Windows.Forms.RadioButton();
 			this.ddlColorDepth = new System.Windows.Forms.ComboBox();
 			this.cbUseGateway = new System.Windows.Forms.CheckBox();
@@ -780,6 +781,7 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
 			gbDesktopSize.Controls.Add(this.flowDesktopSize);
+			gbDesktopSize.Controls.Add(this.pnlDesktopSizeOptions);
 			gbDesktopSize.Location = new System.Drawing.Point(4, 37);
 			gbDesktopSize.Margin = new System.Windows.Forms.Padding(4);
 			gbDesktopSize.Name = "gbDesktopSize";
@@ -810,11 +812,22 @@
 			this.flowDesktopSize.Size = new System.Drawing.Size(331, 194);
 			this.flowDesktopSize.TabIndex = 0;
 			// 
+			// pnlDesktopSizeOptions
+			// 
+			this.pnlDesktopSizeOptions.AutoSize = true;
+			this.pnlDesktopSizeOptions.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+			this.pnlDesktopSizeOptions.Dock = System.Windows.Forms.DockStyle.Bottom;
+			this.pnlDesktopSizeOptions.Location = new System.Drawing.Point(4, 213);
+			this.pnlDesktopSizeOptions.Name = "pnlDesktopSizeOptions";
+			this.pnlDesktopSizeOptions.Size = new System.Drawing.Size(331, 0);
+			this.pnlDesktopSizeOptions.TabIndex = 1;
+			this.pnlDesktopSizeOptions.Visible = false;
+			// 
 			// rbSize800x600
 			// 
 			rbSize800x600.AutoSize = true;
 			rbSize800x600.Location = new System.Drawing.Point(4, 4);
-			rbSize800x600.Margin = new System.Windows.Forms.Padding(4);
+			rbSize800x600.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize800x600.Name = "rbSize800x600";
 			rbSize800x600.Size = new System.Drawing.Size(91, 21);
 			rbSize800x600.TabIndex = 0;
@@ -826,7 +839,7 @@
 			// 
 			rbSize1024x768.AutoSize = true;
 			rbSize1024x768.Location = new System.Drawing.Point(4, 33);
-			rbSize1024x768.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1024x768.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1024x768.Name = "rbSize1024x768";
 			rbSize1024x768.Size = new System.Drawing.Size(99, 21);
 			rbSize1024x768.TabIndex = 4;
@@ -838,7 +851,7 @@
 			// 
 			rbSize1280x800.AutoSize = true;
 			rbSize1280x800.Location = new System.Drawing.Point(4, 62);
-			rbSize1280x800.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1280x800.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1280x800.Name = "rbSize1280x800";
 			rbSize1280x800.Size = new System.Drawing.Size(99, 21);
 			rbSize1280x800.TabIndex = 1;
@@ -850,7 +863,7 @@
 			// 
 			rbSize1280x1024.AutoSize = true;
 			rbSize1280x1024.Location = new System.Drawing.Point(4, 91);
-			rbSize1280x1024.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1280x1024.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1280x1024.Name = "rbSize1280x1024";
 			rbSize1280x1024.Size = new System.Drawing.Size(107, 21);
 			rbSize1280x1024.TabIndex = 5;
@@ -862,7 +875,7 @@
 			// 
 			rbSize1440x900.AutoSize = true;
 			rbSize1440x900.Location = new System.Drawing.Point(4, 120);
-			rbSize1440x900.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1440x900.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1440x900.Name = "rbSize1440x900";
 			rbSize1440x900.Size = new System.Drawing.Size(99, 21);
 			rbSize1440x900.TabIndex = 2;
@@ -874,7 +887,7 @@
 			// 
 			rbSize1600x1200.AutoSize = true;
 			rbSize1600x1200.Location = new System.Drawing.Point(4, 149);
-			rbSize1600x1200.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1600x1200.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1600x1200.Name = "rbSize1600x1200";
 			rbSize1600x1200.Size = new System.Drawing.Size(107, 21);
 			rbSize1600x1200.TabIndex = 6;
@@ -886,7 +899,7 @@
 			// 
 			rbSize1680x1050.AutoSize = true;
 			rbSize1680x1050.Location = new System.Drawing.Point(119, 4);
-			rbSize1680x1050.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1680x1050.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1680x1050.Name = "rbSize1680x1050";
 			rbSize1680x1050.Size = new System.Drawing.Size(107, 21);
 			rbSize1680x1050.TabIndex = 3;
@@ -898,7 +911,7 @@
 			// 
 			rbSize1920x1200.AutoSize = true;
 			rbSize1920x1200.Location = new System.Drawing.Point(119, 33);
-			rbSize1920x1200.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1920x1200.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1920x1200.Name = "rbSize1920x1200";
 			rbSize1920x1200.Size = new System.Drawing.Size(107, 21);
 			rbSize1920x1200.TabIndex = 7;
@@ -911,7 +924,7 @@
 			rbSizeSame.AutoSize = true;
 			rbSizeSame.Checked = true;
 			rbSizeSame.Location = new System.Drawing.Point(119, 62);
-			rbSizeSame.Margin = new System.Windows.Forms.Padding(4);
+			rbSizeSame.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSizeSame.Name = "rbSizeSame";
 			rbSizeSame.Size = new System.Drawing.Size(154, 21);
 			rbSizeSame.TabIndex = 8;
@@ -924,7 +937,7 @@
 			// 
 			rbSizeFull.AutoSize = true;
 			rbSizeFull.Location = new System.Drawing.Point(119, 91);
-			rbSizeFull.Margin = new System.Windows.Forms.Padding(4);
+			rbSizeFull.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSizeFull.Name = "rbSizeFull";
 			rbSizeFull.Size = new System.Drawing.Size(98, 21);
 			rbSizeFull.TabIndex = 9;
@@ -936,14 +949,13 @@
 			// 
 			this.rbSizeCustom.AutoSize = true;
 			this.rbSizeCustom.Location = new System.Drawing.Point(119, 120);
-			this.rbSizeCustom.Margin = new System.Windows.Forms.Padding(4);
+			this.rbSizeCustom.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			this.rbSizeCustom.Name = "rbSizeCustom";
 			this.rbSizeCustom.Size = new System.Drawing.Size(76, 21);
 			this.rbSizeCustom.TabIndex = 10;
 			this.rbSizeCustom.TabStop = true;
 			this.rbSizeCustom.Text = "Custom";
 			this.rbSizeCustom.UseVisualStyleBackColor = true;
-			this.rbSizeCustom.CheckedChanged += new System.EventHandler(this.rbSizeCustom_CheckedChanged);
 			// 
 			// ddlColorDepth
 			// 
@@ -1432,6 +1444,7 @@
 		private System.Windows.Forms.ComboBox ddlKeyboardHook;
 		private System.Windows.Forms.ComboBox ddlColorDepth;
 		private System.Windows.Forms.FlowLayoutPanel flowDesktopSize;
+		private System.Windows.Forms.Panel pnlDesktopSizeOptions;
 		private System.Windows.Forms.RadioButton rbSizeCustom;
 		private System.Windows.Forms.CheckBox cbUseGateway;
 		private System.Windows.Forms.TextBox txtGatewayDomain;

@@ -19,6 +19,9 @@ namespace Plugin.RDP.UI
 
 		private SettingsDataSet.TreeRow _parentRow;
 
+		/// <summary>Additional settings for the remote desktop size modes that require it</summary>
+		private readonly Dictionary<RadioButton, IDesktopSizeOptions> _desktopSizeOptions = new Dictionary<RadioButton, IDesktopSizeOptions>();
+
 		/// <summary>The user requested to close the editor or the changes were saved</summary>
 		public event EventHandler CloseRequested;
 
@@ -260,9 +263,14 @@ namespace Plugin.RDP.UI
 		{
 			get
 			{
-				foreach(Control ctrl in flowDesktopSize.Controls)
-					if(((RadioButton)ctrl).Checked)
-						return new DesktopSizeParser(ctrl.Tag.ToString());
+				foreach(RadioButton ctrl in flowDesktopSize.Controls)
+					if(ctrl.Checked)
+					{
+						DesktopSizeParser result = new DesktopSizeParser(ctrl.Tag?.ToString());
+						if(this._desktopSizeOptions.TryGetValue(ctrl, out IDesktopSizeOptions options))
+							options.ApplyTo(result);
+						return result;
+					}
 				throw new NotImplementedException();
 			}
 			set
@@ -270,19 +278,18 @@ namespace Plugin.RDP.UI
 				if(value == null)
 					value = new DesktopSizeParser();
 
-				Boolean isCustom = true;
-				foreach(Control ctrl in flowDesktopSize.Controls)
+				RadioButton selected = rbSizeCustom;
+				foreach(RadioButton ctrl in flowDesktopSize.Controls)
 					if(value.ToString().Equals(ctrl.Tag))
 					{
-						((RadioButton)ctrl).Checked = true;
-						isCustom = false;
+						selected = ctrl;
+						break;
 					}
-				if(isCustom)
-				{
-					rbSizeCustom.Checked = true;
-					rbSizeCustom.Tag = value.ToString();
-					rbSizeCustom.Text = $"Custom: {value}";
-				}
+
+				if(this._desktopSizeOptions.TryGetValue(selected, out IDesktopSizeOptions options))
+					options.LoadFrom(value);
+				selected.Checked = true;
+				this.ToggleDesktopSizeOptions();
 			}
 		}
 
@@ -431,6 +438,36 @@ namespace Plugin.RDP.UI
 			txtUser.DefaultText = Environment.UserName;
 			udPort.DefaultValue = RdpClient.DefaultRDPPort;
 			tabMain.Visible = tsbnSave.Enabled = false;
+
+			foreach(RadioButton ctrl in flowDesktopSize.Controls)
+				ctrl.CheckedChanged += this.rbDesktopSize_CheckedChanged;
+			this.RegisterDesktopSizeOptions(rbSizeCustom, new DesktopSizeCustomOptions());
+		}
+
+		/// <summary>Attach additional settings to the remote desktop size mode</summary>
+		/// <param name="mode">Desktop size mode to which settings belongs</param>
+		/// <param name="options">Settings control that will be shown when the <paramref name="mode"/> is selected</param>
+		private void RegisterDesktopSizeOptions<T>(RadioButton mode, T options) where T : Control, IDesktopSizeOptions
+		{
+			options.Visible = false;
+			pnlDesktopSizeOptions.Controls.Add(options);
+			this._desktopSizeOptions.Add(mode, options);
+			this.ToggleDesktopSizeOptions();
+		}
+
+		/// <summary>Show additional settings of the selected desktop size mode and hide others</summary>
+		private void ToggleDesktopSizeOptions()
+		{
+			Control selected = null;
+			foreach(KeyValuePair<RadioButton, IDesktopSizeOptions> item in this._desktopSizeOptions)
+				if(item.Key.Checked)
+					selected = (Control)item.Value;
+
+			pnlDesktopSizeOptions.SuspendLayout();
+			foreach(Control ctrl in pnlDesktopSizeOptions.Controls)
+				ctrl.Visible = ctrl == selected;
+			pnlDesktopSizeOptions.Visible = selected != null;
+			pnlDesktopSizeOptions.ResumeLayout();
 		}
 
 		public void ToggleNewClientRow(SettingsDataSet.TreeRow parentRow)
@@ -622,18 +659,10 @@ namespace Plugin.RDP.UI
 		{
 			gbGateway.Enabled = cbUseGateway.Checked;
 		}
-		private void rbSizeCustom_CheckedChanged(Object sender, EventArgs e)
+		private void rbDesktopSize_CheckedChanged(Object sender, EventArgs e)
 		{
-			if(rbSizeCustom.Checked)
-				using(DesktopSizeDlg dlg = new DesktopSizeDlg(rbSizeCustom.Tag))
-					if(dlg.ShowDialog() == DialogResult.OK)
-					{
-						rbSizeCustom.Tag = dlg.CustomSize;
-						rbSizeCustom.Text = $"Custom: {dlg.CustomSize}";
-					} else if(rbSizeCustom.Tag == null)
-					{
-						this.DesktopSizeI = new DesktopSizeParser() { SameAsClient = true, };
-					}
+			if(((RadioButton)sender).Checked)
+				this.ToggleDesktopSizeOptions();
 		}
 
 		private void udPort_ValueChanged(Object sender, EventArgs e){
