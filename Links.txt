@@ -12,4 +12,4 @@ Recompile and sign:
 Nuget deploy:
 nuget pack Windows.AxMSTSCLib.nuspec
 
-nuget push Windows.AxMSTSCLib.1.0.3.nupkg -ApiKey ghp_c87uUQnpTg8PDkvjjQ2xgahzDathEg1sfNtj -src https://nuget.pkg.github.com/DKorablin/index.json
+nuget push Windows.AxMSTSCLib.1.0.3.nupkg -ApiKey <LocalDeploymentToken> -src https://nuget.pkg.github.com/DKorablin/index.json
