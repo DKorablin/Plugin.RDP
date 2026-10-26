@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using Plugin.RDP.Bll;
 using Plugin.RDP.UI;
 using SAL.Windows;
 using System.Diagnostics;
+using System.Drawing;
 using Plugin.RDP.Properties;
 
 namespace Plugin.RDP
@@ -14,10 +17,37 @@ namespace Plugin.RDP
 		private PluginWindows Plugin => (PluginWindows)this.Window.Plugin.Instance;
 		private IWindow Window => (IWindow)base.Parent;
 
+		/// <summary>Client settings editor displayed in the bottom panel or null</summary>
+		private RdpClientDlg Editor => splitMain.Panel2.Controls.OfType<RdpClientDlg>().FirstOrDefault();
+
 		public PanelRdpClient()
 		{
-			InitializeComponent();
+			this.InitializeComponent();
+			foreach(RdpClientTreeNode.TreeImageList key in Enum.GetValues(typeof(RdpClientTreeNode.TreeImageList)))
+				ilList.Images.Add(key.ToString(), PanelRdpClient.GetTreeImage(key));//GetValues is sorted by value so the image index matches the enum value
 			gridSearch.TreeView = tvList;
+		}
+
+		/// <summary>Get the tree node image</summary>
+		/// <param name="key">Tree node image index</param>
+		/// <returns>Image for the tree image list</returns>
+		private static Image GetTreeImage(RdpClientTreeNode.TreeImageList key)
+		{
+			switch(key)
+			{
+			case RdpClientTreeNode.TreeImageList.Folder:
+				return Resources.iconFolder;
+			case RdpClientTreeNode.TreeImageList.ClientDisconnected:
+				return Resources.iconClientDisconnected.ToBitmap();
+			case RdpClientTreeNode.TreeImageList.ClientConnected:
+				return Resources.iconClientConnected.ToBitmap();
+			case RdpClientTreeNode.TreeImageList.Client2Disconnected:
+				return Resources.iconRDP2Disconnected;
+			case RdpClientTreeNode.TreeImageList.Client2Connected:
+				return Resources.iconRDP2Connected;
+			default:
+				throw new NotImplementedException($"Tree image \"{key}\" not implemented");
+			}
 		}
 
 		protected override void OnCreateControl()
@@ -52,7 +82,10 @@ namespace Plugin.RDP
 					parentNode.Expand();
 				}
 			} else
+			{
 				node.Text = e.Row.Name;
+				node.UpdateState();
+			}
 			node.EnsureVisible();
 		}
 
@@ -77,6 +110,59 @@ namespace Plugin.RDP
 		{
 			this.Plugin.Settings.XmlSettings.RdpClientStateChange -= this.XmlSettings_RdpClientConnected;
 			this.Plugin.Settings.XmlSettings.RdpClientUpdated -= this.XmlSettings_RdpClientUpdated;
+			this.CloseDetails();
+		}
+
+		/// <summary>Show the control in the bottom panel, replacing the previous one</summary>
+		/// <param name="ctrl">Control to display</param>
+		private void ShowDetails(Control ctrl)
+		{
+			this.CloseDetails();
+
+			ctrl.Dock = DockStyle.Fill;
+			if(ctrl is RdpClientDlg editor)
+				editor.CloseRequested += this.Details_CloseRequested;
+			else if(ctrl is RemoteSessionsDlg sessions)
+				sessions.CloseRequested += this.Details_CloseRequested;
+
+			splitMain.Panel2.Controls.Add(ctrl);
+			if(splitMain.Panel2Collapsed)
+			{
+				splitMain.Panel2Collapsed = false;
+				splitMain.SplitterDistance = Math.Max(splitMain.Panel1MinSize, splitMain.Height / 3);
+			}
+			ctrl.Focus();
+		}
+
+		/// <summary>Collapse the bottom panel and destroy the control displayed inside it</summary>
+		private void CloseDetails()
+		{
+			splitMain.Panel2Collapsed = true;
+			while(splitMain.Panel2.Controls.Count > 0)
+				splitMain.Panel2.Controls[0].Dispose();
+		}
+
+		private void Details_CloseRequested(Object sender, EventArgs e)
+		{
+			SettingsDataSet.TreeRow discardRow = sender is RdpClientDlg editor && editor.IsDiscardable
+				? editor.Row
+				: null;
+
+			this.CloseDetails();
+
+			if(discardRow != null)
+			{//The user closed the editor of the just created client without specifying required settings
+				RdpClientTreeNode node = tvList.FindNode(discardRow.TreeID);
+				this.Plugin.Settings.XmlSettings.RemoveNode(discardRow);
+				this.Plugin.Settings.XmlSettings.Save();
+				node?.Remove();
+			}
+		}
+
+		private void splitMain_MouseDoubleClick(Object sender, MouseEventArgs e)
+		{
+			if(splitMain.SplitterRectangle.Contains(e.Location))
+				this.CloseDetails();
 		}
 
 		private void bgList_DoWork(Object sender, System.ComponentModel.DoWorkEventArgs e)
@@ -133,16 +219,10 @@ namespace Plugin.RDP
 
 		private void tsbnAdd_DropDownItemClicked(Object sender, ToolStripItemClickedEventArgs e)
 		{
-			if(e.ClickedItem == tsmiAddClient || e.ClickedItem == tsmiNodeAddClient)
-			{
-				SettingsDataSet.TreeRow parentRow = tvList.SelectedNode != null && tvList.SelectedNode.ElementType == ElementType.Tree
-					? tvList.SelectedNode.Tag
-					: null;
-
-				this.Plugin.InvokeCreateClientDlg(parentRow);
-			} else if(e.ClickedItem == tsmiAddNode || e.ClickedItem == tsmiNodeAddNode)
-			{
-				RdpClientTreeNode node = new RdpClientTreeNode(null, ElementType.Tree);
+			Boolean isAddClient = e.ClickedItem == tsmiAddClient || e.ClickedItem == tsmiNodeAddClient;
+			if(isAddClient || e.ClickedItem == tsmiAddNode || e.ClickedItem == tsmiNodeAddNode)
+			{//The row is created after the user enters the node name (tvList_AfterLabelEdit)
+				RdpClientTreeNode node = new RdpClientTreeNode(null, isAddClient ? ElementType.Client : ElementType.Tree);
 				if(tvList.SelectedNode != null && tvList.SelectedNode.ElementType == ElementType.Tree)
 				{
 					tvList.SelectedNode.Nodes.Add(node);
@@ -150,8 +230,69 @@ namespace Plugin.RDP
 				} else
 					tvList.Nodes.Add(node);
 				node.BeginEdit();
+			} else if(e.ClickedItem == tsmiImportRdp || e.ClickedItem == tsmiNodeImportRdp)
+			{
+				SettingsDataSet.TreeRow parentRow = tvList.SelectedNode != null && tvList.SelectedNode.ElementType == ElementType.Tree
+					? tvList.SelectedNode.Tag
+					: null;
+
+				this.ImportRdpFiles(parentRow);
 			} else
 				throw new NotImplementedException(String.Format("Element {0} not implemented", e.ClickedItem));
+		}
+
+		/// <summary>Import clients from the Remote Desktop Connection (.rdp) files selected by user</summary>
+		/// <param name="parentRow">Parent node for imported clients or null to import to the root</param>
+		private void ImportRdpFiles(SettingsDataSet.TreeRow parentRow)
+		{
+			using(OpenFileDialog dlg = new OpenFileDialog() { Filter = Constant.RdpFileFilter, Multiselect = true, Title = "Import Remote Desktop Connection files", })
+			{
+				if(dlg.ShowDialog(this) != DialogResult.OK)
+					return;
+
+				List<String> errors = new List<String>();
+				foreach(String filePath in dlg.FileNames)
+					try
+					{
+						this.Plugin.Settings.XmlSettings.ImportClient(parentRow?.TreeID, filePath);
+					} catch(Exception exc)
+					{
+						this.Plugin.Trace.TraceData(TraceEventType.Error, 10, exc);
+						errors.Add($"{Path.GetFileName(filePath)}: {exc.Message}");
+					}
+
+				this.Plugin.Settings.XmlSettings.Save();
+
+				if(errors.Count > 0)
+					MessageBox.Show("Failed to import files:" + Environment.NewLine + String.Join(Environment.NewLine, errors.ToArray()), this.Window.Caption, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+			}
+		}
+
+		/// <summary>Export the client settings to the Remote Desktop Connection (.rdp) file selected by user</summary>
+		/// <param name="row">Client tree row to export</param>
+		private void ExportRdpFile(SettingsDataSet.TreeRow row)
+		{
+			String fileName = row.Name;
+			foreach(Char invalid in Path.GetInvalidFileNameChars())
+				fileName = fileName.Replace(invalid, '_');
+
+			using(SaveFileDialog dlg = new SaveFileDialog() { Filter = Constant.RdpFileFilter, DefaultExt = "rdp", AddExtension = true, FileName = fileName, Title = "Export to Remote Desktop Connection file", })
+			{
+				if(dlg.ShowDialog(this) != DialogResult.OK)
+					return;
+
+				Boolean includePassword = !String.IsNullOrEmpty(row.RdpClientRow.PasswordI)
+					&& MessageBox.Show("Save the password to the file?\r\nThe password will be encrypted and can be used only by the current Windows user on this computer.", this.Window.Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
+
+				try
+				{
+					this.Plugin.Settings.XmlSettings.ExportClient(row, dlg.FileName, includePassword);
+				} catch(Exception exc)
+				{
+					this.Plugin.Trace.TraceData(TraceEventType.Error, 10, exc);
+					MessageBox.Show(exc.Message, this.Window.Caption, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}
+			}
 		}
 
 		private void tsbnDelete_Click(Object sender, EventArgs e)
@@ -171,6 +312,10 @@ namespace Plugin.RDP
 			}
 			if(MessageBox.Show(message, this.Window.Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
 			{//Removing a node from settings
+				RdpClientDlg editor = this.Editor;
+				if(editor != null && editor.IsEditing(tvList.SelectedNode))
+					this.CloseDetails();
+
 				this.Plugin.Settings.XmlSettings.RemoveNode(row);
 				this.Plugin.Settings.XmlSettings.Save();
 				tvList.SelectedNode.Remove();
@@ -197,7 +342,7 @@ namespace Plugin.RDP
 					{
 						MessageBox.Show("There is already node with the same name in this branch", e.Label, MessageBoxButtons.OK, MessageBoxIcon.Stop);
 						e.CancelEdit = true;
-						if(node.Tag != null)
+						if(node.Tag == null)//Deleting a node if the user tried to create it with existing name
 							node.Remove();
 						return;
 					}
@@ -205,14 +350,25 @@ namespace Plugin.RDP
 			}
 
 			if(node.Tag != null)//Modifying a previously created node
-				this.Plugin.Settings.XmlSettings.ModifyTreeNodeName(node.Tag, e.Label);
+				SettingsBll.ModifyTreeNodeName(node.Tag, e.Label);
 			else
 			{//Adding a new node
 				SettingsDataSet.TreeRow parentRow = node.Parent == null ? null : node.Parent.Tag;
 				switch(node.ElementType)
 				{
-				case ElementType.Client://Adding a new client
-					throw new NotImplementedException();
+				case ElementType.Client://Adding a new client and opening its settings
+					{
+						SettingsDataSet.TreeRow newRow = this.Plugin.Settings.XmlSettings.CreateClient(parentRow == null ? (Int32?)null : parentRow.TreeID, e.Label);
+						node.Tag = newRow;
+						node.Text = e.Label;
+						node.UpdateState();
+						tvList.SelectedNode = node;
+
+						RdpClientDlg editor = new RdpClientDlg(this.Plugin);
+						editor.ToggleRdpClientRow(newRow, true);
+						this.ShowDetails(editor);
+					}
+					break;
 				case ElementType.Tree://Adding a new node to the tree
 					{
 						SettingsDataSet.TreeRow newRow = this.Plugin.Settings.XmlSettings.ModifyTreeNode(null, parentRow == null ? (Int32?)null : parentRow.TreeID, ElementType.Tree, e.Label);
@@ -314,7 +470,7 @@ namespace Plugin.RDP
 			if(e.Node != null)
 			{
 				RdpClientTreeNode node = (RdpClientTreeNode)e.Node;
-				this.Plugin.OnRowSelected(node.Tag);
+				this.Editor?.ToggleRdpClientRow(node.Tag);
 			}
 		}
 
@@ -341,18 +497,19 @@ namespace Plugin.RDP
 				this.Plugin.Settings.XmlSettings.OnClientChangeState(row.TreeID, RdpStateEventArgs.StateType.Focus);
 			} else if(e.ClickedItem == tsmiClientConnect)
 			{//Connecting a client to a server
-				if(row.ElementType == ElementType.Client)
-					_ = this.Plugin.CreateWindow<DocumentRdpClient,DocumentRdpClientSettings>(new DocumentRdpClientSettings() { TreeId = row.TreeID });
-				else
+				if(row.ElementType != ElementType.Client)
 					throw new InvalidOperationException();
+				else if(tvList.SelectedNode.IsInvalid)//Required settings are not specified, show them instead of connecting
+					this.cmsClient_ItemClicked(sender, new ToolStripItemClickedEventArgs(tsmiClientProperties));
+				else
+					_ = this.Plugin.CreateWindow<DocumentRdpClient,DocumentRdpClientSettings>(new DocumentRdpClientSettings() { TreeId = row.TreeID });
 			} else if(e.ClickedItem == tsmiClientDisconnect)
 			{//Disconnecting the client from the server
 				if(MessageBox.Show($"Are you sure you want to disconnect from client {row.Name}?", this.Window.Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
 					this.Plugin.Settings.XmlSettings.OnClientChangeState(row.TreeID, RdpStateEventArgs.StateType.Disconnect);
 			} else if(e.ClickedItem == tsmiClientListSessions)
 			{//Displaying a list of sessions to the server
-				using(RemoteSessionsDlg dlg = new RemoteSessionsDlg(this.Plugin, row.RdpClientRow.Server))
-					dlg.ShowDialog();
+				this.ShowDetails(new RemoteSessionsDlg(this.Plugin, row.RdpClientRow.Server));
 			} else if(e.ClickedItem == tsmiClientLogOff)
 			{//Client exits the server
 				if(MessageBox.Show(String.Format("Are you sure you want to logOff from client {0}?", row.Name), this.Window.Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
@@ -361,11 +518,20 @@ namespace Plugin.RDP
 					if(RemoteSessionsDlg.LogOffUser(clientRow.Server, clientRow.UserName))
 						this.Plugin.Settings.XmlSettings.OnClientChangeState(row.TreeID, RdpStateEventArgs.StateType.Disconnect);
 				}
+			} else if(e.ClickedItem == tsmiClientExportRdp)
+			{//Saving connection settings to the .rdp file
+				if(row.ElementType == ElementType.Client)
+					this.ExportRdpFile(row);
+				else
+					throw new InvalidOperationException();
 			} else if(e.ClickedItem == tsmiClientProperties)
 			{//Displaying server connection properties
 				if(row.ElementType == ElementType.Client)
-					this.Plugin.InvokeModifyClientDlg(row);
-				else
+				{
+					RdpClientDlg editor = new RdpClientDlg(this.Plugin);
+					editor.ToggleRdpClientRow(row);
+					this.ShowDetails(editor);
+				} else
 					throw new InvalidOperationException();
 			} else
 				throw new NotImplementedException(e.ClickedItem.ToString());
@@ -378,6 +544,8 @@ namespace Plugin.RDP
 				this.tsbnAdd_DropDownItemClicked(sender, new ToolStripItemClickedEventArgs(tsmiAddClient));
 			else if(e.ClickedItem == tsmiNodeAddNode)
 				this.tsbnAdd_DropDownItemClicked(sender, new ToolStripItemClickedEventArgs(tsmiNodeAddNode));
+			else if(e.ClickedItem == tsmiNodeImportRdp)
+				this.tsbnAdd_DropDownItemClicked(sender, new ToolStripItemClickedEventArgs(tsmiNodeImportRdp));
 			else
 				throw new NotImplementedException($"Action for node {e.ClickedItem} not implemented");
 		}

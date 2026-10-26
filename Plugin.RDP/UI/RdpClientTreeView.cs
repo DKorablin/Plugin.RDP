@@ -47,7 +47,7 @@ namespace Plugin.RDP.UI
 		public RdpClientTreeNode FindNode(Int32 treeId)
 		{
 			foreach(RdpClientTreeNode node in base.EnumerateNodes(null))
-				if(node.Tag.TreeID == treeId)
+				if(node.Tag != null && node.Tag.TreeID == treeId)//New node without row while its name is edited
 					return node;
 			return null;
 		}

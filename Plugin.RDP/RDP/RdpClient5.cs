@@ -35,7 +35,7 @@ namespace Plugin.RDP.RDP
 
 		protected override void WndProc(ref Message m)
 		{
-			if(m.Msg == 33 && !base.ContainsFocus)
+			if(m.Msg == Native.WM_MOUSEACTIVATE && !base.ContainsFocus)
 				base.Focus();
 			base.WndProc(ref m);
 		}

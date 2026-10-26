@@ -20,5 +20,7 @@ namespace Plugin.RDP
 		Clipboard = 0x10,
 		/// <summary>Forward Point of Service devices</summary>
 		PointOfService = 0x20,
+		/// <summary>Forward local audio recording (microphone)</summary>
+		AudioCapture = 0x40,
 	}
 }

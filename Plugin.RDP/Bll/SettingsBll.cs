@@ -3,9 +3,7 @@ using System.ComponentModel;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using AlphaOmega.Bll;
-using Plugin.RDP.UI;
 
 namespace Plugin.RDP.Bll
 {
@@ -27,16 +25,61 @@ namespace Plugin.RDP.Bll
 			using(Stream stream = this._plugin.HostWindows.Plugins.Settings(this._plugin).LoadAssemblyBlob(Constant.SettingsFileName))
 				if(stream != null)
 					base.DataSet.ReadXml(stream);
+
+			foreach(SettingsDataSet.RdpClientRow clientRow in base.DataSet.RdpClient)
+			{
+				if(!clientRow.IsRedirectAudioCaptureNull())
+				{//Legacy: audio capture was stored in a separate column
+					if(clientRow.RedirectAudioCapture)
+						clientRow.RedirectI |= RedirectFlags.AudioCapture;
+					clientRow.SetRedirectAudioCaptureNull();
+				}
+				clientRow.Validate();//Errors are not stored in the settings file
+			}
+
+			this._plugin.Settings.PropertyChanged += this.Settings_PropertyChanged;
+		}
+
+		private void Settings_PropertyChanged(Object sender, PropertyChangedEventArgs e)
+		{
+			if(e.PropertyName == nameof(PluginSettings.EncryptPassword))
+				this.Save();//Rewrite stored passwords in the new mode
 		}
 
 		public override void Save()
 		{
+			Boolean encrypt = this._plugin.Settings.EncryptPassword;
+			SettingsDataSet data = (SettingsDataSet)base.DataSet.Copy();//Passwords in memory are used as is
+			foreach(SettingsDataSet.RdpClientRow clientRow in data.RdpClient)
+			{
+				if(!clientRow.IsPasswordNull())
+					clientRow.Password = SettingsBll.ConvertPassword(clientRow.Password, encrypt);
+				if(!clientRow.IsGatewayPasswordNull())
+					clientRow.GatewayPassword = SettingsBll.ConvertPassword(clientRow.GatewayPassword, encrypt);
+			}
+
 			using(MemoryStream stream = new MemoryStream())
 			{
-				base.DataSet.WriteXml(stream);
+				data.WriteXml(stream);
 				this._plugin.HostWindows.Plugins.Settings(this._plugin).SaveAssemblyBlob(Constant.SettingsFileName, stream);
 			}
 			//base.Save();
+		}
+
+		/// <summary>Convert the password to the form it is stored in the settings file</summary>
+		/// <param name="value">Plain text or DPAPI protected password</param>
+		/// <param name="encrypt">Store the password encrypted for the current Windows user</param>
+		/// <returns>The password to store</returns>
+		private static String ConvertPassword(String value, Boolean encrypt)
+		{
+			if(String.IsNullOrEmpty(value))
+				return value;
+
+			Boolean isProtected = PasswordProtector.IsProtected(value);
+			if(encrypt)
+				return isProtected ? value : PasswordProtector.Protect(value);
+			else
+				return isProtected ? PasswordProtector.Unprotect(value) ?? value : value;//Password encrypted by another user is kept as is
 		}
 
 		/// <summary>Event triggered when a connection to a client has been established</summary>
@@ -141,7 +184,7 @@ namespace Plugin.RDP.Bll
 		/// <param name="row">Row to change</param>
 		/// <param name="name">Node name</param>
 		/// <returns>Node change successful</returns>
-		public Boolean ModifyTreeNodeName(SettingsDataSet.TreeRow row, String name)
+		public static Boolean ModifyTreeNodeName(SettingsDataSet.TreeRow row, String name)
 		{
 			_ = row ?? throw new ArgumentNullException(nameof(row));
 			if(String.IsNullOrEmpty(name))
@@ -157,35 +200,74 @@ namespace Plugin.RDP.Bll
 			return result;
 		}
 
-		/// <summary>Change or add client settings</summary>
-		/// <param name="treeRow">Tree row whose client settings need to be changed</param>
-		/// <param name="server">Server name</param>
-		/// <param name="userName">Login of the client connecting to the server</param>
-		public void ModifyClient(SettingsDataSet.TreeRow treeRow, RdpClientDlg dlg)
+		/// <summary>Create a new client with default settings</summary>
+		/// <remarks>The client is invalid until the remote computer is specified</remarks>
+		/// <param name="parentTreeId">The parent node ID or null to add client to the root</param>
+		/// <param name="name">The client node name</param>
+		/// <returns>The tree row of the created client</returns>
+		public SettingsDataSet.TreeRow CreateClient(Int32? parentTreeId, String name)
 		{
-			if(treeRow.ElementType != ElementType.Client)
-				throw new InvalidOperationException();
+			SettingsDataSet.TreeRow treeRow = this.ModifyTreeNode(null, parentTreeId, ElementType.Client, name);
 
-			SettingsDataSet.RdpClientRow clientRow = this.GetClientRow(treeRow.TreeID);
-			if(clientRow == null)
-				clientRow = base.DataSet.RdpClient.NewRdpClientRow();
-
+			SettingsDataSet.RdpClientRow clientRow = base.DataSet.RdpClient.NewRdpClientRow();
 			clientRow.BeginEdit();
+			clientRow.ResetToDefaults();
 			clientRow.TreeID = treeRow.TreeID;
+			clientRow.Server = String.Empty;
+			clientRow.UserName = Environment.UserName;
+			clientRow.DomainI = Environment.UserDomainName;
+			base.DataSet.RdpClient.AddRdpClientRow(clientRow);
 
-			Type rowType = clientRow.GetType();
-			foreach(PropertyInfo property in dlg.GetType().GetProperties(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public))
-				if(property.IsDefined(typeof(BindableAttribute), false))
-				{
-					Object value = property.GetValue(dlg, null);
-					rowType.InvokeMember(property.Name, BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.SetProperty, null, clientRow, new Object[] { value, });
-				}
+			clientRow.Validate();
+			return treeRow;
+		}
 
-			if(clientRow.RowState == DataRowState.Detached)
-				base.DataSet.RdpClient.AddRdpClientRow(clientRow);
-			else clientRow.AcceptChanges();
+		/// <summary>Validate the changed client settings, save them and notify about the change</summary>
+		/// <param name="treeRow">Tree row of the changed client or folder</param>
+		public void CommitClient(SettingsDataSet.TreeRow treeRow)
+		{
+			_ = treeRow ?? throw new ArgumentNullException(nameof(treeRow));
+
+			this.GetClientRow(treeRow.TreeID)?.Validate();
+			this.Save();
+			this.OnClientUpdated(treeRow);
+		}
+
+		/// <summary>Create a new client from the Remote Desktop Connection (.rdp) file</summary>
+		/// <param name="parentTreeId">The parent node ID or null to add client to the root</param>
+		/// <param name="filePath">Path to the .rdp file</param>
+		/// <returns>The tree row of the imported client</returns>
+		public SettingsDataSet.TreeRow ImportClient(Int32? parentTreeId, String filePath)
+		{
+			RdpFile file = RdpFile.Load(filePath);
+
+			SettingsDataSet.RdpClientRow clientRow = base.DataSet.RdpClient.NewRdpClientRow();
+			clientRow.BeginEdit();
+			file.ToClient(clientRow);//Parse before adding the tree node so an invalid file leaves no orphan nodes
+
+			String name = Path.GetFileNameWithoutExtension(filePath);
+			SettingsDataSet.TreeRow treeRow = this.ModifyTreeNode(null, parentTreeId, ElementType.Client, String.IsNullOrWhiteSpace(name) ? clientRow.Server : name);
+
+			clientRow.TreeID = treeRow.TreeID;
+			base.DataSet.RdpClient.AddRdpClientRow(clientRow);
+			clientRow.Validate();
 
 			this.OnClientUpdated(treeRow);
+			return treeRow;
+		}
+
+		/// <summary>Save the client settings to the Remote Desktop Connection (.rdp) file</summary>
+		/// <param name="treeRow">Tree row of the client to export</param>
+		/// <param name="filePath">Path to the .rdp file</param>
+		/// <param name="includePassword">Store the password encrypted for the current Windows user</param>
+		public void ExportClient(SettingsDataSet.TreeRow treeRow, String filePath, Boolean includePassword)
+		{
+			_ = treeRow ?? throw new ArgumentNullException(nameof(treeRow));
+
+			SettingsDataSet.RdpClientRow clientRow = this.GetClientRow(treeRow.TreeID)
+				?? throw new ArgumentException($"Row with client ID {treeRow.TreeID} not found");
+
+			RdpFile.FromClient(treeRow, clientRow, includePassword).Save(filePath);
 		}
 
 		/// <summary>Delete a tree node and all its child nodes</summary>

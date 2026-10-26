@@ -16,6 +16,16 @@ namespace Plugin.RDP
 		private DocumentRdpClientSettings _settings;
 		private Boolean _isControlCreated = false;
 		private FormWindowState _lastWindowState;
+		/// <summary>User logged in and display control channel is available</summary>
+		private Boolean _isLoggedIn = false;
+		/// <summary>Remote size was changed by full screen mode and must be restored even if client area is unchanged</summary>
+		private Boolean _isResizeForced = false;
+		/// <summary>Resize mode captured on connect. Changes in plugin settings are applied only to new connections</summary>
+		private RdpClient.SessionResizeMode _resizeMode = RdpClient.SessionResizeMode.Auto;
+		/// <summary>Remote session resize is delayed till user stops resizing the window</summary>
+		private readonly Timer _resizeTimer = new Timer() { Interval = 500, };
+		/// <summary>Fills Windows Security dialog when server policy requires to enter the password manually</summary>
+		private CredentialPromptAutoFill _credentialPromptAutoFill;
 
 		Object IPluginSettings.Settings => this.Settings;
 
@@ -42,6 +52,10 @@ namespace Plugin.RDP
 		private SettingsDataSet.RdpClientRow RdpClientRow
 			=> this._rdpClientRow ?? (this._rdpClientRow = this.Plugin.Settings.XmlSettings.GetClientRow(this.TreeRow.TreeID));
 
+		/// <summary>Remote session follows the client area (or the screen in full screen mode). Explicitly specified desktop size is never changed</summary>
+		private Boolean IsSessionResizable
+			=> this.RdpClientRow.DesktopSizeI.SameAsClient || this.RdpClientRow.DesktopSizeI.FullScreen;
+
 		private RdpClient _rdpClient;
 		private RdpClient RdpClient
 		{
@@ -53,8 +67,11 @@ namespace Plugin.RDP
 					this._rdpClient = RdpClient.AllocClient(this.Plugin, this);
 
 					this._rdpClient.OnConnected += new EventHandler(this.RdpClient_OnConnected);
+					this._rdpClient.OnLoginComplete += new EventHandler(this.RdpClient_OnLoginComplete);
 					this._rdpClient.OnDisconnected += new AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEventHandler(this.RdpClient_OnDisconnected);
 					this._rdpClient.OnRequestLeaveFullScreen += new EventHandler(this.RdpClient_OnRequestLeaveFullScreen);
+					this._rdpClient.OnEnterFullScreenMode += new EventHandler(this.RdpClient_OnEnterFullScreenMode);
+					this._rdpClient.OnLeaveFullScreenMode += new EventHandler(this.RdpClient_OnLeaveFullScreenMode);
 
 					this._rdpClient.AdvancedSettings2.ContainerHandledFullScreen = 0;//The client automatically opens in full screen.
 					this._rdpClient.AdvancedSettings2.SmartSizing = false;
@@ -70,7 +87,10 @@ namespace Plugin.RDP
 		private IWindow Window => (IWindow)base.Parent;
 
 		public DocumentRdpClient()
-			=> this.InitializeComponent();
+		{
+			this.InitializeComponent();
+			this._resizeTimer.Tick += new EventHandler(this.ResizeTimer_Tick);
+		}
 
 		protected override void OnCreateControl()
 		{
@@ -108,6 +128,7 @@ namespace Plugin.RDP
 					break;
 				case FormWindowState.Normal:
 					this.RdpClient.LeaveFullScreen();
+					this.FitSessionAfterLeaveFullScreen();
 					break;
 				}
 			}
@@ -116,11 +137,51 @@ namespace Plugin.RDP
 		protected override void OnResize(EventArgs e)
 		{
 			base.OnResize(e);
+			this.ScheduleResizeSession();
+		}
 
-			// Only resize if connected and using "SameAsClient" desktop size mode
-			if(this.Window != null && this.RdpClient?.ConnectionStatus == RDP.RdpClient.ConnectionState.Connected &&
-				this.RdpClientRow.DesktopSizeI.SameAsClient)
-				this.RdpClient.UpdateSessionDisplaySettings(this.Size);
+		/// <summary>Restarts resize timer so remote session will be resized after user stops resizing the window</summary>
+		private void ScheduleResizeSession()
+		{
+			if(!this._isLoggedIn || this._rdpClient == null || !this.IsSessionResizable)
+				return;
+
+			this._resizeTimer.Stop();
+			this._resizeTimer.Start();
+		}
+
+		private void ResizeTimer_Tick(Object sender, EventArgs e)
+		{
+			this._resizeTimer.Stop();
+
+			if(!this._isLoggedIn || this._rdpClient == null || !this.IsSessionResizable)
+				return;
+			if(this.ParentForm?.WindowState == FormWindowState.Minimized || this.ClientSize.Width <= 0 || this.ClientSize.Height <= 0)
+				return;
+
+			//In full screen mode remote session is fitted to the screen where the control is shown
+			Boolean isFullScreen = this.RdpClient.MsRdpClient.FullScreen;
+			Size size = isFullScreen
+				? Screen.FromControl(this).Bounds.Size
+				: this.ClientSize;
+
+			Boolean allowReconnect = this.RdpClientRow.ConnectionTypeI != ConnectionType.VirtualMachineConsoleConnect;
+			RdpClient.ResizeMethod method = this.RdpClient.ResizeSession(size, this._resizeMode, allowReconnect, this._isResizeForced);
+			this._isResizeForced = isFullScreen;//Remote size differs from client area and must be restored after leaving full screen
+			if(method != RdpClient.ResizeMethod.None)
+				this.Plugin.Trace.TraceEvent(TraceEventType.Verbose, 1, "Session {0} resized to {1}x{2} using {3}", this.RdpClientRow.Server, size.Width, size.Height, method);
+		}
+
+		/// <summary>Fits remote session into the client area after leaving full screen mode</summary>
+		private void FitSessionAfterLeaveFullScreen()
+		{
+			if(!this.IsSessionResizable)
+				this.RdpClient.AdvancedSettings2.SmartSizing = true;//Remote desktop is bigger than client area
+			else if(this._resizeMode != RdpClient.SessionResizeMode.None)
+			{
+				this._isResizeForced = true;
+				this.ScheduleResizeSession();
+			}
 		}
 
 		private void Settings_PropertyChanged(Object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -143,9 +204,18 @@ namespace Plugin.RDP
 		{
 			this.Plugin.Settings.XmlSettings.RdpClientStateChange -= new EventHandler<RdpStateEventArgs>(this.XmlSettings_RdpClientConnected);
 
+			this._isLoggedIn = false;
+			this._resizeTimer.Stop();
+			this._resizeTimer.Dispose();
+			this._credentialPromptAutoFill?.Dispose();
+			this._credentialPromptAutoFill = null;
+
 			this.RdpClient.OnConnected -= new EventHandler(this.RdpClient_OnConnected);
+			this.RdpClient.OnLoginComplete -= new EventHandler(this.RdpClient_OnLoginComplete);
 			this.RdpClient.OnDisconnected -= new AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEventHandler(this.RdpClient_OnDisconnected);
 			this.RdpClient.OnRequestLeaveFullScreen -= new EventHandler(this.RdpClient_OnRequestLeaveFullScreen);
+			this.RdpClient.OnEnterFullScreenMode -= new EventHandler(this.RdpClient_OnEnterFullScreenMode);
+			this.RdpClient.OnLeaveFullScreenMode -= new EventHandler(this.RdpClient_OnLeaveFullScreenMode);
 
 			if(this.RdpClient.ConnectionStatus == RdpClient.ConnectionState.Connected)
 			{
@@ -192,6 +262,8 @@ namespace Plugin.RDP
 				return;
 			}
 
+			PluginSettings settings = this.Plugin.Settings;
+			this._resizeMode = settings.ResizeMode;
 			this.RdpClient.MsRdpClient.Server = String.IsNullOrEmpty(this.RdpClientRow.Server)
 				? this.TreeRow.Name
 				: this.RdpClientRow.Server;//If Server is empty then use TreeRow Name as Server Name
@@ -200,7 +272,7 @@ namespace Plugin.RDP
 				this.RdpClient.MsRdpClient.UserName = this.RdpClientRow.UserName;
 
 			if(!String.IsNullOrEmpty(this.RdpClientRow.PasswordI))
-				this.RdpClient.AdvancedSettings2.ClearTextPassword = this.RdpClientRow.PasswordI;
+				this.RdpClient.AdvancedSettings2.ClearTextPassword = this.RdpClientRow.GetPassword();
 
 			if(!String.IsNullOrEmpty(this.RdpClientRow.DomainI))
 				this.RdpClient.MsRdpClient.Domain = this.RdpClientRow.DomainI;
@@ -210,6 +282,7 @@ namespace Plugin.RDP
 			IMsRdpClientAdvancedSettings5 advanced5 = this.RdpClient.AdvancedSettings6;
 			IMsRdpClientAdvancedSettings6 advanced6 = this.RdpClient.AdvancedSettings7;
 			IMsRdpClientAdvancedSettings7 advanced7 = this.RdpClient.AdvancedSettings8;
+			IMsRdpClientAdvancedSettings8 advanced8 = this.RdpClient.AdvancedSettings9;
 
 			advanced.RDPPort = this.RdpClientRow.ConnectPortI;
 
@@ -218,6 +291,22 @@ namespace Plugin.RDP
 
 			advanced.EnableWindowsKey = 1;
 
+			//Hot keys (virtual-key code only, modifiers are fixed by the RDP control)
+			if(settings.AltTab != Keys.None)
+				advanced.HotKeyAltTab = (Int32)settings.AltTab;
+			if(settings.AltShiftTab != Keys.None)
+				advanced.HotKeyAltShiftTab = (Int32)settings.AltShiftTab;
+			if(settings.AltEsc != Keys.None)
+				advanced.HotKeyAltEsc = (Int32)settings.AltEsc;
+			if(settings.AltSpace != Keys.None)
+				advanced.HotKeyAltSpace = (Int32)settings.AltSpace;
+			if(settings.CtrlEsc != Keys.None)
+				advanced.HotKeyCtrlEsc = (Int32)settings.CtrlEsc;
+			if(settings.CtrlAltDel != Keys.None)
+				advanced.HotKeyCtrlAltDel = (Int32)settings.CtrlAltDel;
+			if(settings.FullScreen != Keys.None)
+				advanced.HotKeyFullScreen = (Int32)settings.FullScreen;
+
 			advanced.RedirectDrives = (this.RdpClientRow.RedirectI & RedirectFlags.Drives) == RedirectFlags.Drives;
 			advanced.RedirectPorts = (this.RdpClientRow.RedirectI & RedirectFlags.Ports) == RedirectFlags.Ports;
 			advanced.RedirectPrinters = (this.RdpClientRow.RedirectI & RedirectFlags.Printers) == RedirectFlags.Printers;
@@ -225,11 +314,10 @@ namespace Plugin.RDP
 
 			advanced.MinutesToIdleTimeout = this.RdpClientRow.MinutesToIdle;
 
-			this.RdpClient.SecuredSettings2.AudioRedirectionMode = this.RdpClientRow.RedirectAudioCapture ? 1 : 0;
+			this.RdpClient.SecuredSettings2.AudioRedirectionMode = (Int32)this.RdpClientRow.RedirectAudioI;
 			this.RdpClient.SecuredSettings2.KeyboardHookMode = (Int32)this.RdpClientRow.KeyboardHookI;
 
-			if(advanced4 != null)
-				advanced4.AuthenticationLevel = (UInt32)this.RdpClientRow.AuthenticationLevelI;
+			advanced4.AuthenticationLevel = (UInt32)this.RdpClientRow.AuthenticationLevelI;
 
 			if(advanced5 != null)
 			{
@@ -239,22 +327,32 @@ namespace Plugin.RDP
 				advanced5.RedirectPOSDevices = (this.RdpClientRow.RedirectI & RedirectFlags.PointOfService) == RedirectFlags.PointOfService;
 			}
 
+			if(advanced6 != null)
+				advanced6.EnableCredSspSupport = true;
+
+			if(advanced8 != null)
+				advanced8.AudioCaptureRedirectionMode = (this.RdpClientRow.RedirectI & RedirectFlags.AudioCapture) == RedirectFlags.AudioCapture;
+
 			if(this.RdpClientRow.ConnectionTypeI == ConnectionType.VirtualMachineConsoleConnect)
 			{
-				advanced.RDPPort = 2179;
 				advanced.ConnectToServerConsole = true;
-				advanced6.AuthenticationLevel = 0u;
-				advanced6.AuthenticationServiceClass = "Microsoft Virtual Console Service";
-				advanced6.EnableCredSspSupport = true;
-				advanced7.PCB = this.RdpClientRow.VirtualMachineId;
-				advanced7.NegotiateSecurityLayer = false;
+				if(advanced6 != null)
+				{
+					advanced6.AuthenticationLevel = 0u;
+					advanced6.AuthenticationServiceClass = "Microsoft Virtual Console Service";
+				}
+				if(advanced7 != null)
+				{
+					advanced7.PCB = this.RdpClientRow.VirtualMachineId;
+					advanced7.NegotiateSecurityLayer = false;
+				}
 			} else
 			{
 				advanced.ConnectToServerConsole = this.RdpClientRow.ConnectConsole;
 				advanced4.EnableAutoReconnect = true;
 				advanced4.MaxReconnectAttempts = 20;
-				advanced6.ConnectToAdministerServer = false;
-				advanced6.EnableCredSspSupport = true;
+				if(advanced6 != null)
+					advanced6.ConnectToAdministerServer = this.RdpClientRow.ConnectConsole;
 
 				IMsRdpClientNonScriptable4 nonScriptable = (IMsRdpClientNonScriptable4)this.RdpClient.GetOcx();
 				nonScriptable.PromptForCredentials = false;
@@ -276,9 +374,9 @@ namespace Plugin.RDP
 				//Desktop size
 				if(this.RdpClientRow.DesktopSizeI.FullScreen)
 				{
-					Rectangle bounds = this.GetDesktopSize();
+					Size size = Screen.FromControl(this).Bounds.Size;
 
-					this.RdpClient.SetDesktopSize(bounds.Size);
+					this.RdpClient.SetDesktopSize(size);
 
 					this.RdpClient.GoFullScreen();
 				} else if(this.RdpClientRow.DesktopSizeI.SameAsClient)
@@ -286,7 +384,7 @@ namespace Plugin.RDP
 				else if(!this.RdpClientRow.DesktopSizeI.Size.IsEmpty)
 					this.RdpClient.SetDesktopSize(this.RdpClientRow.DesktopSizeI.Size);
 				else
-					throw new InvalidOperationException();
+					throw new InvalidOperationException("Unknown type of DesktopSize specified");
 			}
 
 			//Gateway
@@ -305,7 +403,7 @@ namespace Plugin.RDP
 					transportSettings2.GatewayCredSharing = this.RdpClientRow.GatewayShareAuth ? 1u : 0u;
 					transportSettings2.GatewayUsername =this.RdpClientRow.GatewayUserName;
 					transportSettings2.GatewayDomain = this.RdpClientRow.GatewayDomain;
-					transportSettings2.GatewayPassword = this.RdpClientRow.GatewayPassword;
+					transportSettings2.GatewayPassword = this.RdpClientRow.GetGatewayPassword();
 				}
 			} else
 			{
@@ -314,7 +412,21 @@ namespace Plugin.RDP
 			}
 
 			this.RdpClient.MsRdpClient.ConnectingText = "Connecting...";
+			this.StartCredentialPromptAutoFill();
 			this.RdpClient.MsRdpClient.Connect();
+		}
+
+		/// <summary>Starts waiting for the Windows Security dialog if the feature is enabled and the password is stored</summary>
+		private void StartCredentialPromptAutoFill()
+		{
+			this._credentialPromptAutoFill?.Stop();
+
+			if(!this.Plugin.Settings.AutoFillPasswordPrompt || String.IsNullOrEmpty(this.RdpClientRow.PasswordI))
+				return;
+
+			if(this._credentialPromptAutoFill == null)
+				this._credentialPromptAutoFill = new CredentialPromptAutoFill(this.Plugin.Trace);
+			this._credentialPromptAutoFill.Start(this.RdpClientRow.UserName, this.RdpClientRow.GetPassword());
 		}
 
 		private void RdpClient_OnConnected(Object sender, EventArgs e)
@@ -323,9 +435,22 @@ namespace Plugin.RDP
 			this.Plugin.Settings.XmlSettings.OnClientChangeState(this.Settings.TreeId.Value, RdpStateEventArgs.StateType.Connect);
 		}
 
+		private void RdpClient_OnLoginComplete(Object sender, EventArgs e)
+		{
+			this._isLoggedIn = true;
+			this._credentialPromptAutoFill?.Stop();
+			this.ScheduleResizeSession();//Client area could be changed while user was logging in
+		}
+
 		System.Threading.Timer _xpHack;
 		private void RdpClient_OnDisconnected(Object sender, AxMSTSCLib.IMsTscAxEvents_OnDisconnectedEvent e)
 		{
+			this._isLoggedIn = false;
+			this._isResizeForced = false;
+			this._resizeTimer.Stop();
+			this._credentialPromptAutoFill?.Stop();
+			this.RdpClient.ResetResizeState();
+
 			this.SetConnectingState(false);
 			this.RdpClient.MsRdpClient.ConnectingText = "Disconnected";
 			if(e != null)
@@ -357,6 +482,24 @@ namespace Plugin.RDP
 			// Ensure parent form state is tracked correctly
 			if(this.ParentForm != null)
 				_lastWindowState = this.ParentForm.WindowState;
+
+			this.FitSessionAfterLeaveFullScreen();
+		}
+
+		/// <summary>Full screen mode is entered by hot key, connection bar or from code</summary>
+		private void RdpClient_OnEnterFullScreenMode(Object sender, EventArgs e)
+		{
+			this.Plugin.Trace.TraceEvent(TraceEventType.Verbose, 1, "RDP entered full screen for: {0}", this.RdpClientRow.Server);
+			this.ScheduleResizeSession();//Fit remote session to the screen
+		}
+
+		/// <summary>Full screen mode is left by hot key, connection bar or from code</summary>
+		private void RdpClient_OnLeaveFullScreenMode(Object sender, EventArgs e)
+		{
+			if(this.ParentForm != null)
+				_lastWindowState = this.ParentForm.WindowState;
+
+			this.FitSessionAfterLeaveFullScreen();
 		}
 
 		private static void CloseWindowByTimer(Object pThis)
@@ -364,28 +507,6 @@ namespace Plugin.RDP
 			DocumentRdpClient document = (DocumentRdpClient)pThis;
 			document._xpHack.Dispose();
 			document.Window.Close();
-		}
-
-		private Rectangle GetDesktopSize()
-		{
-			Rectangle result = Screen.GetBounds(this._rdpClient.Control);
-			if(this.Plugin.Settings.UseMultipleMonitors && (result.Height < this._rdpClient.MsRdpClient.DesktopHeight || result.Width < this._rdpClient.MsRdpClient.DesktopWidth))
-			{
-				Int32 width = 0;
-				Int32 height = 65535;
-				Screen[] allScreens = Screen.AllScreens;
-				foreach(Screen screen in Screen.AllScreens)
-				{
-					width += screen.Bounds.Width;
-					height = Math.Min(screen.Bounds.Height, height);
-				}
-				width = Math.Min(width, RdpClient.MaxDesktopWidth);
-				height = Math.Min(height, RdpClient.MaxDesktopHeight);
-				result = new Rectangle(0, 0, width, height);
-			} else
-				result = Screen.PrimaryScreen.WorkingArea;
-
-			return result;
 		}
 
 		private void SetConnectingState(Boolean isConnected)

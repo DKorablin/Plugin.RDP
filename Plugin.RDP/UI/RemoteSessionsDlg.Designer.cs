@@ -13,14 +13,17 @@
 		/// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
 		protected override void Dispose(bool disposing)
 		{
-			if(disposing && (components != null))
+			if(disposing)
 			{
-				components.Dispose();
+				if(this._sessions.IsConnected)
+					this._sessions.CloseServer();
+				if(components != null)
+					components.Dispose();
 			}
 			base.Dispose(disposing);
 		}
 
-		#region Windows Form Designer generated code
+		#region Component Designer generated code
 
 		/// <summary>
 		/// Required method for Designer support - do not modify
@@ -50,14 +53,12 @@
 			// 
 			// lvSessions
 			// 
-			this.lvSessions.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-						| System.Windows.Forms.AnchorStyles.Left)
-						| System.Windows.Forms.AnchorStyles.Right)));
+			this.lvSessions.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.lvSessions.ContextMenuStrip = this.cmsSession;
 			this.lvSessions.FullRowSelect = true;
-			this.lvSessions.Location = new System.Drawing.Point(13, 13);
+			this.lvSessions.Location = new System.Drawing.Point(0, 0);
 			this.lvSessions.Name = "lvSessions";
-			this.lvSessions.Size = new System.Drawing.Size(267, 228);
+			this.lvSessions.Size = new System.Drawing.Size(292, 244);
 			this.lvSessions.TabIndex = 1;
 			this.lvSessions.UseCompatibleStateImageBehavior = false;
 			this.lvSessions.View = System.Windows.Forms.View.Details;
@@ -94,12 +95,16 @@
 			// 
 			// bgLogoffSession
 			// 
+			this.bgLogoffSession.WorkerReportsProgress = true;
 			this.bgLogoffSession.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgLogoffSession_DoWork);
+			this.bgLogoffSession.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.bgSession_ProgressChanged);
 			this.bgLogoffSession.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgLogoffSession_RunWorkerCompleted);
 			// 
 			// bgDisconnectSession
 			// 
+			this.bgDisconnectSession.WorkerReportsProgress = true;
 			this.bgDisconnectSession.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgDisconnectSession_DoWork);
+			this.bgDisconnectSession.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.bgSession_ProgressChanged);
 			this.bgDisconnectSession.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgDisconnectSession_RunWorkerCompleted);
 			// 
 			// statusStrip1
@@ -122,16 +127,10 @@
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(292, 266);
-			this.Controls.Add(this.statusStrip1);
+			this.Size = new System.Drawing.Size(292, 266);
 			this.Controls.Add(this.lvSessions);
-			this.MaximizeBox = false;
-			this.MinimizeBox = false;
+			this.Controls.Add(this.statusStrip1);
 			this.Name = "RemoteSessionsDlg";
-			this.ShowIcon = false;
-			this.ShowInTaskbar = false;
-			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-			this.Text = "Remote sessions";
 			this.cmsSession.ResumeLayout(false);
 			this.statusStrip1.ResumeLayout(false);
 			this.statusStrip1.PerformLayout();

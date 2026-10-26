@@ -96,6 +96,7 @@
 			this.txtRunApplicationWorkingDir = new System.Windows.Forms.TextBox();
 			this.txtRunApplicationFilePath = new System.Windows.Forms.TextBox();
 			this.flowDesktopSize = new System.Windows.Forms.FlowLayoutPanel();
+			this.pnlDesktopSizeOptions = new System.Windows.Forms.Panel();
 			this.rbSizeCustom = new System.Windows.Forms.RadioButton();
 			this.ddlColorDepth = new System.Windows.Forms.ComboBox();
 			this.cbUseGateway = new System.Windows.Forms.CheckBox();
@@ -119,7 +120,6 @@
 			this.tabMain = new System.Windows.Forms.TabControl();
 			this.error = new System.Windows.Forms.ErrorProvider(this.components);
 			this.tsMain = new System.Windows.Forms.ToolStrip();
-			this.tsbnSave = new System.Windows.Forms.ToolStripButton();
 			this.tsdbIcon = new System.Windows.Forms.ToolStripDropDownButton();
 			this.tsmiIcon2 = new System.Windows.Forms.ToolStripMenuItem();
 			this.tsmiIcon1 = new System.Windows.Forms.ToolStripMenuItem();
@@ -436,7 +436,6 @@
             0,
             0,
             0});
-			this.udPort.ValueChanged += new System.EventHandler(this.udPort_ValueChanged);
 			// 
 			// label6
 			// 
@@ -464,7 +463,6 @@
 			tabLocal.Controls.Add(this.ddlKeyboardHook);
 			tabLocal.Controls.Add(label13);
 			tabLocal.Controls.Add(this.ddlRedirectAudioQuality);
-			tabLocal.Controls.Add(this.cbRedirectAudioCapture);
 			tabLocal.Controls.Add(label12);
 			tabLocal.Controls.Add(label7);
 			tabLocal.Controls.Add(this.ddlRedirectAudio);
@@ -487,7 +485,7 @@
             "On the local computer",
             "On the remote computer",
             "In full screen mode only"});
-			this.ddlKeyboardHook.Location = new System.Drawing.Point(120, 98);
+			this.ddlKeyboardHook.Location = new System.Drawing.Point(120, 70);
 			this.ddlKeyboardHook.Margin = new System.Windows.Forms.Padding(4);
 			this.ddlKeyboardHook.Name = "ddlKeyboardHook";
 			this.ddlKeyboardHook.Size = new System.Drawing.Size(216, 24);
@@ -496,7 +494,7 @@
 			// label13
 			// 
 			label13.AutoSize = true;
-			label13.Location = new System.Drawing.Point(8, 102);
+			label13.Location = new System.Drawing.Point(8, 74);
 			label13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			label13.Name = "label13";
 			label13.Size = new System.Drawing.Size(108, 17);
@@ -513,7 +511,7 @@
             "Dynamic",
             "High",
             "Medium"});
-			this.ddlRedirectAudioQuality.Location = new System.Drawing.Point(120, 65);
+			this.ddlRedirectAudioQuality.Location = new System.Drawing.Point(120, 37);
 			this.ddlRedirectAudioQuality.Margin = new System.Windows.Forms.Padding(4);
 			this.ddlRedirectAudioQuality.Name = "ddlRedirectAudioQuality";
 			this.ddlRedirectAudioQuality.Size = new System.Drawing.Size(216, 24);
@@ -522,18 +520,18 @@
 			// cbRedirectAudioCapture
 			// 
 			this.cbRedirectAudioCapture.AutoSize = true;
-			this.cbRedirectAudioCapture.Location = new System.Drawing.Point(120, 5);
+			this.cbRedirectAudioCapture.Location = new System.Drawing.Point(239, 4);
 			this.cbRedirectAudioCapture.Margin = new System.Windows.Forms.Padding(4);
 			this.cbRedirectAudioCapture.Name = "cbRedirectAudioCapture";
 			this.cbRedirectAudioCapture.Size = new System.Drawing.Size(118, 21);
-			this.cbRedirectAudioCapture.TabIndex = 4;
+			this.cbRedirectAudioCapture.TabIndex = 6;
 			this.cbRedirectAudioCapture.Text = "&Audio capture";
 			this.cbRedirectAudioCapture.UseVisualStyleBackColor = true;
 			// 
 			// label12
 			// 
 			label12.AutoSize = true;
-			label12.Location = new System.Drawing.Point(8, 69);
+			label12.Location = new System.Drawing.Point(8, 41);
 			label12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			label12.Name = "label12";
 			label12.Size = new System.Drawing.Size(98, 17);
@@ -543,7 +541,7 @@
 			// label7
 			// 
 			label7.AutoSize = true;
-			label7.Location = new System.Drawing.Point(8, 37);
+			label7.Location = new System.Drawing.Point(8, 9);
 			label7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			label7.Name = "label7";
 			label7.Size = new System.Drawing.Size(104, 17);
@@ -560,7 +558,7 @@
             "Bring to this computer",
             "Leave at remote computer",
             "Do not play"});
-			this.ddlRedirectAudio.Location = new System.Drawing.Point(120, 33);
+			this.ddlRedirectAudio.Location = new System.Drawing.Point(120, 5);
 			this.ddlRedirectAudio.Margin = new System.Windows.Forms.Padding(4);
 			this.ddlRedirectAudio.Name = "ddlRedirectAudio";
 			this.ddlRedirectAudio.Size = new System.Drawing.Size(216, 24);
@@ -572,11 +570,11 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
 			gbRedirect.Controls.Add(flowRedirect);
-			gbRedirect.Location = new System.Drawing.Point(4, 132);
+			gbRedirect.Location = new System.Drawing.Point(4, 104);
 			gbRedirect.Margin = new System.Windows.Forms.Padding(4);
 			gbRedirect.Name = "gbRedirect";
 			gbRedirect.Padding = new System.Windows.Forms.Padding(4);
-			gbRedirect.Size = new System.Drawing.Size(339, 116);
+			gbRedirect.Size = new System.Drawing.Size(339, 144);
 			gbRedirect.TabIndex = 0;
 			gbRedirect.TabStop = false;
 			gbRedirect.Text = "Redirect";
@@ -589,12 +587,13 @@
 			flowRedirect.Controls.Add(this.cbRedirectPorts);
 			flowRedirect.Controls.Add(this.cbRedirectSmartCards);
 			flowRedirect.Controls.Add(this.cbRedirectPoS);
+			flowRedirect.Controls.Add(this.cbRedirectAudioCapture);
 			flowRedirect.Dock = System.Windows.Forms.DockStyle.Fill;
 			flowRedirect.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
 			flowRedirect.Location = new System.Drawing.Point(4, 19);
 			flowRedirect.Margin = new System.Windows.Forms.Padding(4);
 			flowRedirect.Name = "flowRedirect";
-			flowRedirect.Size = new System.Drawing.Size(331, 93);
+			flowRedirect.Size = new System.Drawing.Size(331, 121);
 			flowRedirect.TabIndex = 1;
 			// 
 			// cbRedirectDrives
@@ -780,6 +779,7 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
 			gbDesktopSize.Controls.Add(this.flowDesktopSize);
+			gbDesktopSize.Controls.Add(this.pnlDesktopSizeOptions);
 			gbDesktopSize.Location = new System.Drawing.Point(4, 37);
 			gbDesktopSize.Margin = new System.Windows.Forms.Padding(4);
 			gbDesktopSize.Name = "gbDesktopSize";
@@ -810,11 +810,22 @@
 			this.flowDesktopSize.Size = new System.Drawing.Size(331, 194);
 			this.flowDesktopSize.TabIndex = 0;
 			// 
+			// pnlDesktopSizeOptions
+			// 
+			this.pnlDesktopSizeOptions.AutoSize = true;
+			this.pnlDesktopSizeOptions.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+			this.pnlDesktopSizeOptions.Dock = System.Windows.Forms.DockStyle.Bottom;
+			this.pnlDesktopSizeOptions.Location = new System.Drawing.Point(4, 213);
+			this.pnlDesktopSizeOptions.Name = "pnlDesktopSizeOptions";
+			this.pnlDesktopSizeOptions.Size = new System.Drawing.Size(331, 0);
+			this.pnlDesktopSizeOptions.TabIndex = 1;
+			this.pnlDesktopSizeOptions.Visible = false;
+			// 
 			// rbSize800x600
 			// 
 			rbSize800x600.AutoSize = true;
 			rbSize800x600.Location = new System.Drawing.Point(4, 4);
-			rbSize800x600.Margin = new System.Windows.Forms.Padding(4);
+			rbSize800x600.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize800x600.Name = "rbSize800x600";
 			rbSize800x600.Size = new System.Drawing.Size(91, 21);
 			rbSize800x600.TabIndex = 0;
@@ -826,7 +837,7 @@
 			// 
 			rbSize1024x768.AutoSize = true;
 			rbSize1024x768.Location = new System.Drawing.Point(4, 33);
-			rbSize1024x768.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1024x768.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1024x768.Name = "rbSize1024x768";
 			rbSize1024x768.Size = new System.Drawing.Size(99, 21);
 			rbSize1024x768.TabIndex = 4;
@@ -838,7 +849,7 @@
 			// 
 			rbSize1280x800.AutoSize = true;
 			rbSize1280x800.Location = new System.Drawing.Point(4, 62);
-			rbSize1280x800.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1280x800.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1280x800.Name = "rbSize1280x800";
 			rbSize1280x800.Size = new System.Drawing.Size(99, 21);
 			rbSize1280x800.TabIndex = 1;
@@ -850,7 +861,7 @@
 			// 
 			rbSize1280x1024.AutoSize = true;
 			rbSize1280x1024.Location = new System.Drawing.Point(4, 91);
-			rbSize1280x1024.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1280x1024.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1280x1024.Name = "rbSize1280x1024";
 			rbSize1280x1024.Size = new System.Drawing.Size(107, 21);
 			rbSize1280x1024.TabIndex = 5;
@@ -862,7 +873,7 @@
 			// 
 			rbSize1440x900.AutoSize = true;
 			rbSize1440x900.Location = new System.Drawing.Point(4, 120);
-			rbSize1440x900.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1440x900.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1440x900.Name = "rbSize1440x900";
 			rbSize1440x900.Size = new System.Drawing.Size(99, 21);
 			rbSize1440x900.TabIndex = 2;
@@ -874,7 +885,7 @@
 			// 
 			rbSize1600x1200.AutoSize = true;
 			rbSize1600x1200.Location = new System.Drawing.Point(4, 149);
-			rbSize1600x1200.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1600x1200.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1600x1200.Name = "rbSize1600x1200";
 			rbSize1600x1200.Size = new System.Drawing.Size(107, 21);
 			rbSize1600x1200.TabIndex = 6;
@@ -886,7 +897,7 @@
 			// 
 			rbSize1680x1050.AutoSize = true;
 			rbSize1680x1050.Location = new System.Drawing.Point(119, 4);
-			rbSize1680x1050.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1680x1050.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1680x1050.Name = "rbSize1680x1050";
 			rbSize1680x1050.Size = new System.Drawing.Size(107, 21);
 			rbSize1680x1050.TabIndex = 3;
@@ -898,7 +909,7 @@
 			// 
 			rbSize1920x1200.AutoSize = true;
 			rbSize1920x1200.Location = new System.Drawing.Point(119, 33);
-			rbSize1920x1200.Margin = new System.Windows.Forms.Padding(4);
+			rbSize1920x1200.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSize1920x1200.Name = "rbSize1920x1200";
 			rbSize1920x1200.Size = new System.Drawing.Size(107, 21);
 			rbSize1920x1200.TabIndex = 7;
@@ -911,7 +922,7 @@
 			rbSizeSame.AutoSize = true;
 			rbSizeSame.Checked = true;
 			rbSizeSame.Location = new System.Drawing.Point(119, 62);
-			rbSizeSame.Margin = new System.Windows.Forms.Padding(4);
+			rbSizeSame.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSizeSame.Name = "rbSizeSame";
 			rbSizeSame.Size = new System.Drawing.Size(154, 21);
 			rbSizeSame.TabIndex = 8;
@@ -924,7 +935,7 @@
 			// 
 			rbSizeFull.AutoSize = true;
 			rbSizeFull.Location = new System.Drawing.Point(119, 91);
-			rbSizeFull.Margin = new System.Windows.Forms.Padding(4);
+			rbSizeFull.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			rbSizeFull.Name = "rbSizeFull";
 			rbSizeFull.Size = new System.Drawing.Size(98, 21);
 			rbSizeFull.TabIndex = 9;
@@ -936,14 +947,13 @@
 			// 
 			this.rbSizeCustom.AutoSize = true;
 			this.rbSizeCustom.Location = new System.Drawing.Point(119, 120);
-			this.rbSizeCustom.Margin = new System.Windows.Forms.Padding(4);
+			this.rbSizeCustom.Margin = new System.Windows.Forms.Padding(4, 2, 4, 2);
 			this.rbSizeCustom.Name = "rbSizeCustom";
 			this.rbSizeCustom.Size = new System.Drawing.Size(76, 21);
 			this.rbSizeCustom.TabIndex = 10;
 			this.rbSizeCustom.TabStop = true;
 			this.rbSizeCustom.Text = "Custom";
 			this.rbSizeCustom.UseVisualStyleBackColor = true;
-			this.rbSizeCustom.CheckedChanged += new System.EventHandler(this.rbSizeCustom_CheckedChanged);
 			// 
 			// ddlColorDepth
 			// 
@@ -1309,21 +1319,11 @@
 			this.tsMain.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
 			this.tsMain.ImageScalingSize = new System.Drawing.Size(20, 20);
 			this.tsMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tsbnSave,
             this.tsdbIcon});
 			this.tsMain.Location = new System.Drawing.Point(0, 0);
 			this.tsMain.Name = "tsMain";
 			this.tsMain.Size = new System.Drawing.Size(389, 27);
 			this.tsMain.TabIndex = 5;
-			// 
-			// tsbnSave
-			// 
-			this.tsbnSave.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-			this.tsbnSave.Image = global::Plugin.RDP.Properties.Resources.FileSave;
-			this.tsbnSave.ImageTransparentColor = System.Drawing.Color.Magenta;
-			this.tsbnSave.Name = "tsbnSave";
-			this.tsbnSave.Size = new System.Drawing.Size(24, 24);
-			this.tsbnSave.Click += new System.EventHandler(this.tsbnSave_Click);
 			// 
 			// tsdbIcon
 			// 
@@ -1359,21 +1359,13 @@
 			this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
-			this.ClientSize = new System.Drawing.Size(389, 370);
 			this.Controls.Add(this.tsMain);
 			this.Controls.Add(this.tabMain);
 			this.Controls.Add(this.txtName);
 			this.Controls.Add(label1);
 			this.Margin = new System.Windows.Forms.Padding(4);
-			this.MaximizeBox = false;
-			this.MaximumSize = new System.Drawing.Size(738, 542);
-			this.MinimizeBox = false;
-			this.MinimumSize = new System.Drawing.Size(338, 356);
 			this.Name = "RdpClientDlg";
-			this.ShowIcon = false;
-			this.ShowInTaskbar = false;
-			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-			this.Text = "Create RDP client";
+			this.Size = new System.Drawing.Size(389, 370);
 			groupBox1.ResumeLayout(false);
 			groupBox1.PerformLayout();
 			tabGeneral.ResumeLayout(false);
@@ -1440,6 +1432,7 @@
 		private System.Windows.Forms.ComboBox ddlKeyboardHook;
 		private System.Windows.Forms.ComboBox ddlColorDepth;
 		private System.Windows.Forms.FlowLayoutPanel flowDesktopSize;
+		private System.Windows.Forms.Panel pnlDesktopSizeOptions;
 		private System.Windows.Forms.RadioButton rbSizeCustom;
 		private System.Windows.Forms.CheckBox cbUseGateway;
 		private System.Windows.Forms.TextBox txtGatewayDomain;
@@ -1461,7 +1454,6 @@
 		private System.Windows.Forms.TextBox txtVmConsoleId;
 		private System.Windows.Forms.CheckBox cbVmConsole;
 		private System.Windows.Forms.ToolStrip tsMain;
-		private System.Windows.Forms.ToolStripButton tsbnSave;
 		private System.Windows.Forms.ToolStripDropDownButton tsdbIcon;
 		private System.Windows.Forms.ToolStripMenuItem tsmiIcon2;
 		private System.Windows.Forms.ToolStripMenuItem tsmiIcon1;

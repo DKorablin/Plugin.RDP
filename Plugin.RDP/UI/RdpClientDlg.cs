@@ -1,602 +1,395 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Reflection;
 using System.Windows.Forms;
 using Plugin.RDP.Bll;
 using Plugin.RDP.RDP;
-using System.Collections.Generic;
 
 namespace Plugin.RDP.UI
 {
-	internal partial class RdpClientDlg : Form
+	internal partial class RdpClientDlg : UserControl
 	{
-		private static readonly Type ClientRowType = typeof(SettingsDataSet.RdpClientRow);
+		/// <summary>Gateway logon methods in the order of <see cref="ddlGatewayLogonMethod"/> items</summary>
+		private static readonly RdpClient.GatewayLogonMethod[] GatewayLogonMethods = new RdpClient.GatewayLogonMethod[]
+		{
+			RdpClient.GatewayLogonMethod.NTLM,
+			RdpClient.GatewayLogonMethod.SmartCard,
+			RdpClient.GatewayLogonMethod.Any,
+		};
 
 		private readonly PluginWindows _plugin;
 
+		/// <summary>Edited tree node (Client name)</summary>
+		private readonly BindingSource _bsTree = new BindingSource();
+
+		/// <summary>Edited client settings</summary>
+		private readonly BindingSource _bsClient = new BindingSource();
+
+		/// <summary>Bindings to the client settings which can be validated</summary>
+		private readonly List<Binding> _clientBindings = new List<Binding>();
+
+		/// <summary>Additional settings for the remote desktop size modes that require it</summary>
+		private readonly Dictionary<RadioButton, IDesktopSizeOptions> _desktopSizeOptions = new Dictionary<RadioButton, IDesktopSizeOptions>();
+
 		private SettingsDataSet.TreeRow _row;
 
-		private SettingsDataSet.TreeRow _parentRow;
+		private SettingsDataSet.RdpClientRow _clientRow;
 
-		private SettingsDataSet.RdpClientRow ClientRow
-			=> this._row == null
-				? null
-				: this._plugin.Settings.XmlSettings.GetClientRow(this._row.TreeID);
+		/// <summary>The client is created right before the editor is opened</summary>
+		private Boolean _isNew;
 
-		#region Configuration
-		public String ClientName
-		{
-			get => txtName.Text.Trim();
-			set => txtName.Text = value;
-		}
+		/// <summary>Controls are filled from the edited row</summary>
+		private Boolean _loading;
 
-		[Bindable(BindableSupport.Default)]
-		public String Server
-		{
-			get => ddlComputer.Text.Trim();
-			set => ddlComputer.Text = value;
-		}
+		/// <summary>The user requested to close the editor</summary>
+		public event EventHandler CloseRequested;
 
-		[Bindable(BindableSupport.Default)]
-		public String UserName
-		{
-			get => txtUser.Text.Trim();
-			set => txtUser.Text = value;
-		}
+		/// <summary>The edited tree row</summary>
+		internal SettingsDataSet.TreeRow Row => this._row;
 
-		[Bindable(BindableSupport.Default)]
-		public String PasswordI
-		{
-			get => txtPassword.Text;
-			set => txtPassword.Text = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public String DomainI
-		{
-			get => txtDomain.Text;
-			set => txtDomain.Text = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public Int16 IconIdI
-		{
-			get
-			{
-				Int16 iconIndex = 0;
-				foreach(ToolStripMenuItem item in tsdbIcon.DropDownItems)
-					if(item.Checked)
-						break;
-					else
-						iconIndex++;
-
-				return iconIndex;
-			}
-			set
-			{
-				Int32 index = 0;
-				foreach(ToolStripMenuItem item in tsdbIcon.DropDownItems)
-				{
-					if(index == value)
-					{
-						tsdbIcon.Text = item.Text;
-						tsdbIcon.Image = item.Image;
-						item.Checked = true;
-						item.Font = new Font(Control.DefaultFont, FontStyle.Bold);
-					} else
-					{
-						item.Checked = false;
-						item.Font = Control.DefaultFont;
-					}
-					index++;
-				}
-			}
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public Int32? ConnectPortI
-		{
-			get => udPort.Value == RdpClient.DefaultRDPPort ? (Int32?)null : (Int32)udPort.Value;
-			set
-			{
-				udPort.Value = value.GetValueOrDefault(RdpClient.DefaultRDPPort);
-				this.udPort_ValueChanged(udPort, EventArgs.Empty);
-			}
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public Boolean ConnectConsole
-		{
-			get => cbConsole.Checked;
-			set => cbConsole.Checked = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public RedirectFlags RedirectI
-		{
-			get
-			{
-				RedirectFlags result = RedirectFlags.None;
-				if(cbRedirectDrives.Checked)
-					result |= RedirectFlags.Drives;
-				if(cbRedirectPorts.Checked)
-					result |= RedirectFlags.Ports;
-				if(cbRedirectPrinters.Checked)
-					result |= RedirectFlags.Printers;
-				if(cbRedirectSmartCards.Checked)
-					result |= RedirectFlags.SmartCards;
-				if(cbRedirectClipboard.Checked)
-					result |= RedirectFlags.Clipboard;
-				if(cbRedirectPoS.Checked)
-					result |= RedirectFlags.PointOfService;
-				return result;
-			}
-			set
-			{
-				cbRedirectDrives.Checked = (value & RedirectFlags.Drives) == RedirectFlags.Drives;
-				cbRedirectPorts.Checked = (value & RedirectFlags.Ports) == RedirectFlags.Ports;
-				cbRedirectPrinters.Checked = (value & RedirectFlags.Printers) == RedirectFlags.Printers;
-				cbRedirectSmartCards.Checked = (value & RedirectFlags.SmartCards) == RedirectFlags.SmartCards;
-				cbRedirectClipboard.Checked = (value & RedirectFlags.Clipboard) == RedirectFlags.Clipboard;
-				cbRedirectPoS.Checked = (value & RedirectFlags.PointOfService) == RedirectFlags.PointOfService;
-			}
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public RdpClient.AudioRedirectionMode RedirectAudioI
-		{
-			get => (RdpClient.AudioRedirectionMode)ddlRedirectAudio.SelectedIndex;
-			set => ddlRedirectAudio.SelectedIndex = (Int32)value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public Boolean RedirectAudioCapture
-		{
-			get => cbRedirectAudioCapture.Checked;
-			set => cbRedirectAudioCapture.Checked = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public RdpClient.AudioRedirectionQuality RedirectAudioQualityI
-		{
-			get => (RdpClient.AudioRedirectionQuality)ddlRedirectAudioQuality.SelectedIndex;
-			set => ddlRedirectAudioQuality.SelectedIndex = (Int32)value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public Boolean RunApplication
-		{
-			get => cbRunApplication.Checked;
-			set
-			{
-				cbRunApplication.Checked = value;
-				this.cbRunApplication_CheckedChanged(cbRunApplication, EventArgs.Empty);
-			}
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public String RunApplicationPathI
-		{
-			get => txtRunApplicationFilePath.Text;
-			set => txtRunApplicationFilePath.Text = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public String RunApplicationWorkingDirI
-		{
-			get => txtRunApplicationWorkingDir.Text;
-			set => txtRunApplicationWorkingDir.Text = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public Boolean RunApplicationMaximize
-		{
-			get => cbRunApplicationMaximize.Checked;
-			set => cbRunApplicationMaximize.Checked = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public AuthenticationLevel AuthenticationLevelI
-		{
-			get => (AuthenticationLevel)ddlAuthenticationLevel.SelectedIndex;
-			set => ddlAuthenticationLevel.SelectedIndex = (Int32)value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public Int32 MinutesToIdle
-		{
-			get => (Int32)udMinutesToIdle.Value;
-			set => udMinutesToIdle.Value = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public RdpClient.KeyboardHookMode KeyboardHookI
-		{
-			get => (RdpClient.KeyboardHookMode)ddlKeyboardHook.SelectedIndex;
-			set => ddlKeyboardHook.SelectedIndex = (Int32)value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public Int32 ColorDepthI
-		{
-			get
-			{
-				Int32 result = Convert.ToInt32(ddlColorDepth.SelectedItem);
-				switch(result)
-				{
-					case 8:
-					case 15:
-					case 16:
-					case 24:
-					case 32:
-						return result;
-					default:
-						throw new ArgumentOutOfRangeException("colorDepth", ddlColorDepth.SelectedItem.ToString(), "Valid color depth is: 8,15,16,24,32");
-				}
-			}
-			set
-			{
-				switch(value)
-				{
-					case 8:
-					case 15:
-					case 16:
-					case 24:
-					case 32:
-						ddlColorDepth.SelectedItem = value.ToString();
-						break;
-					default:
-						throw new ArgumentOutOfRangeException("colorDepth", value.ToString(), "Valid color depth is: 8,15,16,24,32");
-				}
-			}
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public DesktopSizeParser DesktopSizeI
-		{
-			get
-			{
-				foreach(Control ctrl in flowDesktopSize.Controls)
-					if(((RadioButton)ctrl).Checked)
-						return new DesktopSizeParser(ctrl.Tag.ToString());
-				throw new NotImplementedException();
-			}
-			set
-			{
-				if(value == null)
-					value = new DesktopSizeParser();
-
-				Boolean isCustom = true;
-				foreach(Control ctrl in flowDesktopSize.Controls)
-					if(value.ToString().Equals(ctrl.Tag))
-					{
-						((RadioButton)ctrl).Checked = true;
-						isCustom = false;
-					}
-				if(isCustom)
-				{
-					rbSizeCustom.Checked = true;
-					rbSizeCustom.Tag = value.ToString();
-					rbSizeCustom.Text = $"Custom: {value}";
-				}
-			}
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public Boolean GatewayEnabled
-		{
-			get => cbUseGateway.Checked;
-			set
-			{
-				cbUseGateway.Checked = value;
-				this.cbUseGateway_CheckedChanged(cbUseGateway, EventArgs.Empty);
-			}
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public String GatewayServer
-		{
-			get => txtGatewayServer.Text;
-			set => txtGatewayServer.Text = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public Boolean GatewayBypass
-		{
-			get => cbGatewayBypass.Checked;
-			set => cbGatewayBypass.Checked = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public Boolean GatewayShareAuth
-		{
-			get => cbGatewayShareAuth.Checked;
-			set => cbGatewayShareAuth.Checked = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public String GatewayUserName
-		{
-			get => txtGatewayUserName.Text;
-			set => txtGatewayUserName.Text = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public String GatewayPassword
-		{
-			get => txtGatewayPassword.Text;
-			set => txtGatewayPassword.Text = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public String GatewayDomain
-		{
-			get => txtGatewayDomain.Text;
-			set => txtGatewayDomain.Text = value;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public RdpClient.GatewayLogonMethod GatewayLogonMethodI
-		{
-			get
-			{
-				switch(ddlGatewayLogonMethod.SelectedIndex)
-				{
-					case 0:
-						return RdpClient.GatewayLogonMethod.NTLM;
-					case 1:
-						return RdpClient.GatewayLogonMethod.SmartCard;
-					case 2:
-						return RdpClient.GatewayLogonMethod.Any;
-					default:
-						throw new NotImplementedException();
-				}
-			}
-			set
-			{
-				switch(value)
-				{
-					case RdpClient.GatewayLogonMethod.NTLM:
-						ddlGatewayLogonMethod.SelectedIndex = 0;
-						break;
-					case RdpClient.GatewayLogonMethod.SmartCard:
-						ddlGatewayLogonMethod.SelectedIndex = 1;
-						break;
-					case RdpClient.GatewayLogonMethod.Any:
-						ddlGatewayLogonMethod.SelectedIndex = 2;
-						break;
-					default:
-						throw new NotImplementedException();
-				}
-			}
-		}
-
-		public TS_PERF PerformanceFlagsI
-		{
-			get
-			{
-				TS_PERF result = TS_PERF.DISABLE_NOTHING;
-				if(cbDisableWallpaper.Checked)
-					result |= TS_PERF.DISABLE_WALLPAPER;
-				if(cbEnableFontSmoothing.Checked)
-					result |= TS_PERF.ENABLE_FONT_SMOOTHING;
-				if(cbEnableDesktopComposition.Checked)
-					result |= TS_PERF.ENABLE_DESKTOP_COMPOSITION;
-				if(cbDisableFullWindowDrag.Checked)
-					result |= TS_PERF.DISABLE_FULLWINDOWDRAG;
-				if(cbDisableMenuAnimations.Checked)
-					result |= TS_PERF.DISABLE_MENUANIMATIONS;
-				if(cbDisableThemeing.Checked)
-					result |= TS_PERF.DISABLE_THEMING;
-				return result;
-			}
-			set
-			{
-				cbDisableWallpaper.Checked = (value & TS_PERF.DISABLE_WALLPAPER) == TS_PERF.DISABLE_WALLPAPER;
-				cbEnableFontSmoothing.Checked = (value & TS_PERF.ENABLE_FONT_SMOOTHING) == TS_PERF.ENABLE_FONT_SMOOTHING;
-				cbEnableDesktopComposition.Checked = (value & TS_PERF.ENABLE_DESKTOP_COMPOSITION) == TS_PERF.ENABLE_DESKTOP_COMPOSITION;
-				cbDisableFullWindowDrag.Checked = (value & TS_PERF.DISABLE_FULLWINDOWDRAG) == TS_PERF.DISABLE_FULLWINDOWDRAG;
-				cbDisableMenuAnimations.Checked = (value & TS_PERF.DISABLE_MENUANIMATIONS) == TS_PERF.DISABLE_MENUANIMATIONS;
-				cbDisableThemeing.Checked = (value & TS_PERF.DISABLE_THEMING) == TS_PERF.DISABLE_THEMING;
-			}
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public ConnectionType ConnectionTypeI
-		{
-			get => cbVmConsole.Checked
-					? ConnectionType.VirtualMachineConsoleConnect
-					: ConnectionType.Normal;
-			set => cbVmConsole.Checked = value == ConnectionType.VirtualMachineConsoleConnect;
-		}
-
-		[Bindable(BindableSupport.Default)]
-		public String VirtualMachineId
-		{
-			get => txtVmConsoleId.Text;
-			set => txtVmConsoleId.Text = value;
-		}
-		#endregion Configuration
+		/// <summary>The client was just created and still invalid, so it can be removed when the editor is closed</summary>
+		internal Boolean IsDiscardable => this._isNew && this._clientRow != null && this._clientRow.HasErrors;
 
 		public RdpClientDlg(PluginWindows plugin)
 		{
 			this.InitializeComponent();
-			
+
 			this._plugin = plugin;
 			txtDomain.DefaultText = Environment.UserDomainName;
 			txtUser.DefaultText = Environment.UserName;
 			udPort.DefaultValue = RdpClient.DefaultRDPPort;
-			tabMain.Visible = tsbnSave.Enabled = false;
+			tabMain.Visible = false;
+
+			foreach(RadioButton ctrl in flowDesktopSize.Controls)
+				ctrl.CheckedChanged += this.rbDesktopSize_CheckedChanged;
+			this.RegisterDesktopSizeOptions(rbSizeCustom, new DesktopSizeCustomOptions());
+
+			base.Disposed += this.RdpClientDlg_Disposed;
 		}
 
-		public void ToggleNewClientRow(SettingsDataSet.TreeRow parentRow)
+		private void RdpClientDlg_Disposed(Object sender, EventArgs e)
 		{
-			this.RefreshControls(null, parentRow);//Set default values ​​and show/hide controls
-
-			this.SetControlValues(null);
-
-			txtDomain.Text = Environment.UserDomainName;
-			txtUser.Text = Environment.UserName;
-			udPort.Value = RdpClient.DefaultRDPPort;
+			this.DetachRow();
+			this._bsTree.Dispose();
+			this._bsClient.Dispose();
 		}
 
-		public void ToggleRdpClientRow(SettingsDataSet.TreeRow row)
+		/// <summary>Attach additional settings to the remote desktop size mode</summary>
+		/// <param name="mode">Desktop size mode to which settings belongs</param>
+		/// <param name="options">Settings control that will be shown when the <paramref name="mode"/> is selected</param>
+		private void RegisterDesktopSizeOptions<T>(RadioButton mode, T options) where T : Control, IDesktopSizeOptions
 		{
-			this.RefreshControls(row, null);//Set default values ​​and show/hide controls
-
-			this.ClientName = this._row.Name;
-			this.SetControlValues(this.ClientRow);
+			options.Visible = false;
+			options.Changed += this.DesktopSizeOptions_Changed;
+			pnlDesktopSizeOptions.Controls.Add(options);
+			this._desktopSizeOptions.Add(mode, options);
+			this.ToggleDesktopSizeOptions();
 		}
 
-		private void SetControlValues(SettingsDataSet.RdpClientRow instance)
+		/// <summary>Show additional settings of the selected desktop size mode and hide others</summary>
+		private void ToggleDesktopSizeOptions()
 		{
-			foreach(PropertyInfo property in this.GetType().GetProperties(BindingFlags.Instance|BindingFlags.DeclaredOnly|BindingFlags.Public))
-				if(property.IsDefined(typeof(BindableAttribute), false))
+			Control selected = null;
+			foreach(KeyValuePair<RadioButton, IDesktopSizeOptions> item in this._desktopSizeOptions)
+				if(item.Key.Checked)
+					selected = (Control)item.Value;
+
+			pnlDesktopSizeOptions.SuspendLayout();
+			foreach(Control ctrl in pnlDesktopSizeOptions.Controls)
+				ctrl.Visible = ctrl == selected;
+			pnlDesktopSizeOptions.Visible = selected != null;
+			pnlDesktopSizeOptions.ResumeLayout();
+		}
+
+		/// <summary>Show the tree node in the editor</summary>
+		/// <param name="row">The client or folder row to edit</param>
+		/// <param name="isNew">The client is just created and can be removed if the user closes the editor while it is invalid</param>
+		public void ToggleRdpClientRow(SettingsDataSet.TreeRow row, Boolean isNew = false)
+		{
+			_ = row ?? throw new ArgumentNullException(nameof(row));
+			if(row == this._row)
+				return;
+
+			this.DetachRow();
+			this._row = row;
+			this._isNew = isNew;
+			this._clientRow = row.ElementType == ElementType.Client
+				? this._plugin.Settings.XmlSettings.GetClientRow(row.TreeID)
+				: null;
+
+			base.Text = row.Name;
+			tabMain.Visible = this._clientRow != null;
+
+			this._loading = true;
+			try
+			{
+				this._bsTree.DataSource = row;
+				if(txtName.DataBindings.Count == 0)
+					this.BindTreeControls();
+
+				if(this._clientRow != null)
 				{
-					PropertyInfo rowProperty = ClientRowType.GetProperty(property.Name, BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public);
-					Object value;
-					if(instance == null)
-					{
-						Object[] attrs = rowProperty.GetCustomAttributes(typeof(DefaultValueAttribute), false);
-						if(attrs.Length == 1)
-							value = ((DefaultValueAttribute)attrs[0]).Value;
-						else
-							value = rowProperty.PropertyType.IsValueType
-								? Activator.CreateInstance(rowProperty.PropertyType)
-								: null;
-					} else
-						value = rowProperty.GetValue(instance, null);
+					ddlComputer.Items.Clear();
+					ddlComputer.Items.AddRange(this._plugin.Settings.XmlSettings.GetServerList());
 
-					property.SetValue(this, value, null);
+					this._bsClient.DataSource = this._clientRow;
+					if(this._clientBindings.Count == 0)
+						this.BindClientControls();
+
+					this.LoadIcon();
+					this.LoadDesktopSize();
+				}
+			} finally
+			{
+				this._loading = false;
+			}
+
+			row.PropertyChanged += this.Row_PropertyChanged;
+			if(this._clientRow != null)
+			{
+				this._clientRow.PropertyChanged += this.Row_PropertyChanged;
+				this.UpdateErrors();
+			}
+		}
+
+		/// <summary>Stop listening to changes of the edited rows</summary>
+		private void DetachRow()
+		{
+			if(this._row != null)
+				this._row.PropertyChanged -= this.Row_PropertyChanged;
+			if(this._clientRow != null)
+				this._clientRow.PropertyChanged -= this.Row_PropertyChanged;
+			this._clientRow = null;
+		}
+
+		/// <summary>Bind the client name to the tree row</summary>
+		private void BindTreeControls()
+		{
+			txtName.Validating += this.txtName_Validating;//Subscribed before the binding to restore an empty name before it's written
+			Binding name = txtName.DataBindings.Add(nameof(TextBox.Text), this._bsTree, nameof(SettingsDataSet.TreeRow.Name), true, DataSourceUpdateMode.OnValidation);
+			name.Parse += Binding_ParseTrim;
+		}
+
+		/// <summary>Bind the client settings controls to the client row</summary>
+		private void BindClientControls()
+		{
+			this.BindText(ddlComputer, nameof(SettingsDataSet.RdpClientRow.Server)).Parse += Binding_ParseTrim;
+			this.BindText(txtUser, nameof(SettingsDataSet.RdpClientRow.UserName)).Parse += Binding_ParseTrim;
+			this.BindText(txtPassword, nameof(SettingsDataSet.RdpClientRow.PasswordI));
+			this.BindText(txtDomain, nameof(SettingsDataSet.RdpClientRow.DomainI));
+			this.BindText(txtVmConsoleId, nameof(SettingsDataSet.RdpClientRow.VirtualMachineId));
+			this.BindText(txtRunApplicationFilePath, nameof(SettingsDataSet.RdpClientRow.RunApplicationPathI));
+			this.BindText(txtRunApplicationWorkingDir, nameof(SettingsDataSet.RdpClientRow.RunApplicationWorkingDirI));
+			this.BindText(txtGatewayServer, nameof(SettingsDataSet.RdpClientRow.GatewayServer));
+			this.BindText(txtGatewayUserName, nameof(SettingsDataSet.RdpClientRow.GatewayUserName));
+			this.BindText(txtGatewayPassword, nameof(SettingsDataSet.RdpClientRow.GatewayPassword));
+			this.BindText(txtGatewayDomain, nameof(SettingsDataSet.RdpClientRow.GatewayDomain));
+
+			this.Bind(udPort, nameof(NumericUpDown.Value), nameof(SettingsDataSet.RdpClientRow.ConnectPortI), DataSourceUpdateMode.OnValidation);
+			this.Bind(udMinutesToIdle, nameof(NumericUpDown.Value), nameof(SettingsDataSet.RdpClientRow.MinutesToIdle), DataSourceUpdateMode.OnValidation);
+
+			this.BindChecked(cbConsole, nameof(SettingsDataSet.RdpClientRow.ConnectConsole));
+			this.BindChecked(cbRunApplication, nameof(SettingsDataSet.RdpClientRow.RunApplication));
+			this.BindChecked(cbRunApplicationMaximize, nameof(SettingsDataSet.RdpClientRow.RunApplicationMaximize));
+			this.BindChecked(cbUseGateway, nameof(SettingsDataSet.RdpClientRow.GatewayEnabled));
+			this.BindChecked(cbGatewayBypass, nameof(SettingsDataSet.RdpClientRow.GatewayBypass));
+			this.BindChecked(cbGatewayShareAuth, nameof(SettingsDataSet.RdpClientRow.GatewayShareAuth));
+
+			Binding vmConsole = this.BindChecked(cbVmConsole, nameof(SettingsDataSet.RdpClientRow.ConnectionTypeI));
+			vmConsole.Format += (s, e) => e.Value = (ConnectionType)e.Value == ConnectionType.VirtualMachineConsoleConnect;
+			vmConsole.Parse += (s, e) => e.Value = (Boolean)e.Value ? ConnectionType.VirtualMachineConsoleConnect : ConnectionType.Normal;
+
+			this.BindFlag(cbRedirectDrives, nameof(SettingsDataSet.RdpClientRow.RedirectI), RedirectFlags.Drives);
+			this.BindFlag(cbRedirectPorts, nameof(SettingsDataSet.RdpClientRow.RedirectI), RedirectFlags.Ports);
+			this.BindFlag(cbRedirectPrinters, nameof(SettingsDataSet.RdpClientRow.RedirectI), RedirectFlags.Printers);
+			this.BindFlag(cbRedirectSmartCards, nameof(SettingsDataSet.RdpClientRow.RedirectI), RedirectFlags.SmartCards);
+			this.BindFlag(cbRedirectClipboard, nameof(SettingsDataSet.RdpClientRow.RedirectI), RedirectFlags.Clipboard);
+			this.BindFlag(cbRedirectPoS, nameof(SettingsDataSet.RdpClientRow.RedirectI), RedirectFlags.PointOfService);
+			this.BindFlag(cbRedirectAudioCapture, nameof(SettingsDataSet.RdpClientRow.RedirectI), RedirectFlags.AudioCapture);
+
+			this.BindFlag(cbDisableWallpaper, nameof(SettingsDataSet.RdpClientRow.PerformanceFlagsI), TS_PERF.DISABLE_WALLPAPER);
+			this.BindFlag(cbEnableFontSmoothing, nameof(SettingsDataSet.RdpClientRow.PerformanceFlagsI), TS_PERF.ENABLE_FONT_SMOOTHING);
+			this.BindFlag(cbEnableDesktopComposition, nameof(SettingsDataSet.RdpClientRow.PerformanceFlagsI), TS_PERF.ENABLE_DESKTOP_COMPOSITION);
+			this.BindFlag(cbDisableFullWindowDrag, nameof(SettingsDataSet.RdpClientRow.PerformanceFlagsI), TS_PERF.DISABLE_FULLWINDOWDRAG);
+			this.BindFlag(cbDisableMenuAnimations, nameof(SettingsDataSet.RdpClientRow.PerformanceFlagsI), TS_PERF.DISABLE_MENUANIMATIONS);
+			this.BindFlag(cbDisableThemeing, nameof(SettingsDataSet.RdpClientRow.PerformanceFlagsI), TS_PERF.DISABLE_THEMING);
+
+			this.BindIndex(ddlRedirectAudio, nameof(SettingsDataSet.RdpClientRow.RedirectAudioI));
+			this.BindIndex(ddlRedirectAudioQuality, nameof(SettingsDataSet.RdpClientRow.RedirectAudioQualityI));
+			this.BindIndex(ddlAuthenticationLevel, nameof(SettingsDataSet.RdpClientRow.AuthenticationLevelI));
+			this.BindIndex(ddlKeyboardHook, nameof(SettingsDataSet.RdpClientRow.KeyboardHookI));
+
+			Binding colorDepth = this.Bind(ddlColorDepth, nameof(ComboBox.SelectedIndex), nameof(SettingsDataSet.RdpClientRow.ColorDepthI), DataSourceUpdateMode.OnPropertyChanged);
+			colorDepth.Format += (s, e) => e.Value = ddlColorDepth.Items.IndexOf(e.Value.ToString());
+			colorDepth.Parse += (s, e) => e.Value = Convert.ToInt32(ddlColorDepth.Items[(Int32)e.Value]);
+
+			Binding gatewayLogon = this.Bind(ddlGatewayLogonMethod, nameof(ComboBox.SelectedIndex), nameof(SettingsDataSet.RdpClientRow.GatewayLogonMethodI), DataSourceUpdateMode.OnPropertyChanged);
+			gatewayLogon.Format += (s, e) => e.Value = Array.IndexOf(GatewayLogonMethods, e.Value);
+			gatewayLogon.Parse += (s, e) => e.Value = GatewayLogonMethods[(Int32)e.Value];
+		}
+
+		private Binding Bind(Control control, String propertyName, String dataMember, DataSourceUpdateMode updateMode)
+		{
+			Binding result = control.DataBindings.Add(propertyName, this._bsClient, dataMember, true, updateMode);
+			this._clientBindings.Add(result);
+			return result;
+		}
+
+		/// <summary>Bind text field, the value is stored when the control loses focus</summary>
+		private Binding BindText(Control control, String dataMember)
+			=> this.Bind(control, nameof(Control.Text), dataMember, DataSourceUpdateMode.OnValidation);
+
+		/// <summary>Bind checkbox, the value is stored as soon as it's changed</summary>
+		private Binding BindChecked(CheckBox control, String dataMember)
+			=> this.Bind(control, nameof(CheckBox.Checked), dataMember, DataSourceUpdateMode.OnPropertyChanged);
+
+		/// <summary>Bind drop down list where item index is equal to the enum value</summary>
+		private void BindIndex(ComboBox control, String dataMember)
+		{
+			Binding binding = this.Bind(control, nameof(ComboBox.SelectedIndex), dataMember, DataSourceUpdateMode.OnPropertyChanged);
+			binding.Format += (s, e) => e.Value = Convert.ToInt32(e.Value);
+			binding.Parse += (s, e) => e.Value = Enum.ToObject(e.DesiredType, e.Value);
+		}
+
+		/// <summary>Bind checkbox to the single flag of the enum value</summary>
+		/// <param name="control">Checkbox to bind</param>
+		/// <param name="dataMember">The flags enum property of the client row</param>
+		/// <param name="flag">The flag which is toggled by the checkbox</param>
+		private void BindFlag(CheckBox control, String dataMember, Enum flag)
+		{
+			Int64 mask = Convert.ToInt64(flag);
+			Binding binding = this.BindChecked(control, dataMember);
+			binding.Format += (s, e) => e.Value = (Convert.ToInt64(e.Value) & mask) == mask;
+			binding.Parse += (s, e) =>
+			{
+				Int64 value = Convert.ToInt64(this._clientRow.GetType().GetProperty(dataMember).GetValue(this._clientRow, null));
+				value = (Boolean)e.Value ? value | mask : value & ~mask;
+				e.Value = Enum.ToObject(e.DesiredType, value);
+			};
+		}
+
+		private static void Binding_ParseTrim(Object sender, ConvertEventArgs e)
+			=> e.Value = e.Value?.ToString().Trim();
+
+		/// <summary>The edited value is really changed, validate and save it</summary>
+		private void Row_PropertyChanged(Object sender, PropertyChangedEventArgs e)
+		{
+			if(this._loading)
+				return;
+
+			this._plugin.Settings.XmlSettings.CommitClient(this._row);
+			base.Text = this._row.Name;
+			if(this._clientRow != null)
+				this.UpdateErrors();
+		}
+
+		/// <summary>Show validation errors of the client row near the bound controls</summary>
+		private void UpdateErrors()
+		{
+			IDataErrorInfo errors = this._clientRow;
+			foreach(Binding binding in this._clientBindings)
+			{
+				String message = errors[binding.BindingMemberInfo.BindingField];
+				error.SetError(binding.Control, message);
+				if(!String.IsNullOrEmpty(message))
+					binding.Control.BackColor = SystemColors.Info;
+				else if(binding.Control.BackColor == SystemColors.Info)
+					binding.Control.BackColor = Color.Empty;
+			}
+		}
+
+		/// <summary>Fill the desktop size controls from the client row</summary>
+		private void LoadDesktopSize()
+		{
+			DesktopSizeParser value = this._clientRow.DesktopSizeI;
+
+			RadioButton selected = rbSizeCustom;
+			foreach(RadioButton ctrl in flowDesktopSize.Controls)
+				if(value.ToString().Equals(ctrl.Tag))
+				{
+					selected = ctrl;
+					break;
+				}
+
+			if(this._desktopSizeOptions.TryGetValue(selected, out IDesktopSizeOptions options))
+				options.LoadFrom(value);
+			selected.Checked = true;
+			this.ToggleDesktopSizeOptions();
+		}
+
+		/// <summary>Store the selected desktop size and its options to the client row</summary>
+		private void SaveDesktopSize()
+		{
+			if(this._loading || this._clientRow == null)
+				return;
+
+			foreach(RadioButton ctrl in flowDesktopSize.Controls)
+				if(ctrl.Checked)
+				{
+					DesktopSizeParser result = new DesktopSizeParser(ctrl.Tag?.ToString());
+					if(this._desktopSizeOptions.TryGetValue(ctrl, out IDesktopSizeOptions options))
+						options.ApplyTo(result);
+					this._clientRow.DesktopSizeI = result;
+					return;
 				}
 		}
 
-		/// <summary>Update controls, hide or show desired elements</summary>
-		/// <param name="row">Row to edit</param>
-		/// <param name="parentRow">Parent row for which to create a client</param>
-		private void RefreshControls(SettingsDataSet.TreeRow row, SettingsDataSet.TreeRow parentRow)
+		/// <summary>Select the client icon from the client row</summary>
+		private void LoadIcon()
 		{
-			if(row != null && parentRow != null)
-				throw new InvalidOperationException();
-			else if(parentRow != null && parentRow.ElementType == ElementType.Client)
-				throw new InvalidOperationException($"Client Id: {parentRow.TreeID}. Client row can't be parent node for another client");
-
-			tabMain.Visible = tsbnSave.Enabled = row == null || row.ElementType == ElementType.Client;
-
-			this._row = row;
-			this._parentRow = parentRow;
-
-			List<String> titles = new List<String>(2);
-			if(parentRow != null)
-				titles.Add(parentRow.Name);
-			if(row != null)
-				titles.Add(row.Name);
-
-			base.Text = String.Join(" - ", titles.ToArray());
-
-			ddlComputer.Items.Clear();
-			ddlComputer.Items.AddRange(this._plugin.Settings.XmlSettings.GetServerList());
-
-			this.ClientName = null;
+			Int32 index = 0;
+			foreach(ToolStripMenuItem item in tsdbIcon.DropDownItems)
+			{
+				if(index == this._clientRow.IconIdI)
+				{
+					tsdbIcon.Text = item.Text;
+					tsdbIcon.Image = item.Image;
+					item.Checked = true;
+					item.Font = new Font(Control.DefaultFont, FontStyle.Bold);
+				} else
+				{
+					item.Checked = false;
+					item.Font = Control.DefaultFont;
+				}
+				index++;
+			}
 		}
 
 		protected override Boolean ProcessDialogKey(Keys keyData)
 		{
 			switch(keyData)
 			{
-			case Keys.Control | Keys.S:
-				base.AcceptButton.PerformClick();
-				return true;
 			case Keys.Escape:
-				base.Hide();
+				base.Validate();//Store the value of the focused field before the editor is closed
+				this.OnCloseRequested();
 				return true;
 			default:
 				return base.ProcessDialogKey(keyData);
 			}
 		}
 
-		protected override void OnValidating(CancelEventArgs e)
+		/// <summary>Check whether the node or any of its children is edited by this editor</summary>
+		/// <param name="node">Tree node to check</param>
+		/// <returns>The node or any of its children is the edited row</returns>
+		internal Boolean IsEditing(RdpClientTreeNode node)
 		{
-			Boolean cancel = false;
-			if(String.IsNullOrEmpty(this.ClientName))
-			{
-				error.SetError(txtName, "You need to specify client name");
-				txtName.BackColor = SystemColors.Info;
-				cancel = true;
-			} else
-			{
-				error.SetError(txtName, String.Empty);
-				txtName.BackColor = Color.Empty;
-			}
+			if(node.Tag != null && node.Tag == this._row)
+				return true;
 
-			if(String.IsNullOrEmpty(this.Server))
-			{
-				error.SetError(ddlComputer, "You need to specify remote computer to connect");
-				ddlComputer.BackColor = SystemColors.Info;
-				cancel = true;
-			} else
-			{
-				error.SetError(ddlComputer, String.Empty);
-				ddlComputer.BackColor = Color.Empty;
-			}
-
-			if(String.IsNullOrEmpty(this.UserName))
-			{
-				error.SetError(txtUser, "You need to specify login");
-				txtUser.BackColor = SystemColors.Info;
-				cancel = true;
-			} else
-			{
-				error.SetError(txtUser, String.Empty);
-				txtUser.BackColor = Color.Empty;
-			}
-
-			if(cancel)
-				tabMain.SelectedIndex = 0;
-			e.Cancel = cancel;
-
-			base.OnValidating(e);
+			foreach(RdpClientTreeNode child in node.Nodes)
+				if(this.IsEditing(child))
+					return true;
+			return false;
 		}
 
-		protected override void OnClosing(CancelEventArgs e)
+		private void OnCloseRequested()
+			=> this.CloseRequested?.Invoke(this, EventArgs.Empty);
+
+		private void txtName_Validating(Object sender, CancelEventArgs e)
 		{
-			e.Cancel = true;
-			base.Hide();
-			base.OnClosing(e);
-		}
-
-		private void tsbnSave_Click(Object sender, EventArgs e)
-		{
-			if(base.Validate())
-			{
-				SettingsDataSet.TreeRow clientRow;
-				if(this._row != null)
-				{
-					if(this._row.Name != this.ClientName)
-						this._plugin.Settings.XmlSettings.ModifyTreeNodeName(this._row, this.ClientName);
-
-					clientRow = this._row;
-				} else
-				{
-					Int32? parentTreeId = this._parentRow == null ? (Int32?)null : this._parentRow.TreeID;
-					clientRow = this._plugin.Settings.XmlSettings.ModifyTreeNode(null, parentTreeId, ElementType.Client, this.ClientName);
-				}
-
-				this._plugin.Settings.XmlSettings.ModifyClient(clientRow, this);
-				this._plugin.Settings.XmlSettings.Save();
-
-				this._row = null;
-				this._parentRow = null;
-				base.Hide();
-			}
-		}
-
-		private void bnCancel_Click(Object sender, EventArgs e)
-		{
-			this._row = null;
-			this._parentRow = null;
-			base.Hide();
+			if(String.IsNullOrWhiteSpace(txtName.Text) && this._row != null)
+				txtName.Text = this._row.Name;//Node name is required
 		}
 
 		private void cbRunApplication_CheckedChanged(Object sender, EventArgs e)
@@ -607,22 +400,17 @@ namespace Plugin.RDP.UI
 		{
 			gbGateway.Enabled = cbUseGateway.Checked;
 		}
-		private void rbSizeCustom_CheckedChanged(Object sender, EventArgs e)
+		private void rbDesktopSize_CheckedChanged(Object sender, EventArgs e)
 		{
-			if(rbSizeCustom.Checked)
-				using(DesktopSizeDlg dlg = new DesktopSizeDlg(rbSizeCustom.Tag))
-					if(dlg.ShowDialog() == DialogResult.OK)
-					{
-						rbSizeCustom.Tag = dlg.CustomSize;
-						rbSizeCustom.Text = $"Custom: {dlg.CustomSize}";
-					} else if(rbSizeCustom.Tag == null)
-					{
-						this.DesktopSizeI = new DesktopSizeParser() { SameAsClient = true, };
-					}
+			if(((RadioButton)sender).Checked)
+			{
+				this.ToggleDesktopSizeOptions();
+				this.SaveDesktopSize();
+			}
 		}
 
-		private void udPort_ValueChanged(Object sender, EventArgs e)
-			=> udPort.Font = udPort.Value == 3389 ? new Font(Control.DefaultFont, FontStyle.Regular) : new Font(Control.DefaultFont, FontStyle.Bold);
+		private void DesktopSizeOptions_Changed(Object sender, EventArgs e)
+			=> this.SaveDesktopSize();
 
 		private void ddlConnectionSpeed_SelectedIndexChanged(Object sender, EventArgs e)
 		{
@@ -653,22 +441,25 @@ namespace Plugin.RDP.UI
 					flags |= TS_PERF.DISABLE_FULLWINDOWDRAG;
 					break;
 			}
-			this.PerformanceFlagsI = flags;
+
+			if(!this._loading && this._clientRow != null)
+				this._clientRow.PerformanceFlagsI = flags;//Single change, bound checkboxes are refreshed from the row
 		}
 
 		private void cbVmConsole_CheckedChanged(Object sender, EventArgs e)
-			=> txtVmConsoleId.Visible = cbVmConsole.Checked;
+		{
+			txtVmConsoleId.Visible = cbVmConsole.Checked;
+			udPort.DefaultValue = cbVmConsole.Checked ? RdpClient.DefaultVMConsoleConnectPort : RdpClient.DefaultRDPPort;
+		}
 
 		private void tsdbIcon_DropDownItemClicked(Object sender, ToolStripItemClickedEventArgs e)
 		{
-			Int16 index = 0;
-			foreach(ToolStripMenuItem item in tsdbIcon.DropDownItems)
-				if(item == e.ClickedItem)
-				{
-					this.IconIdI = index;
-					break;
-				} else
-					index++;
+			if(this._clientRow == null)
+				return;
+
+			base.Validate();//ToolStrip doesn't take focus, so store the focused field first
+			this._clientRow.IconIdI = (Int16)tsdbIcon.DropDownItems.IndexOf(e.ClickedItem);
+			this.LoadIcon();
 		}
 	}
 }

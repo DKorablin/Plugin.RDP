@@ -10,8 +10,15 @@ Remote Desktop plugin that extends classic RDCMan style workflow with modern sho
   - ALT+TAB / ALT+SHIFT+TAB, ALT+ESC, ALT+SPACE, CTRL+ESC
   - CTRL+ALT+DEL, Full screen toggle, Previous / Next session
 - Multi-monitor connection option
+- Remote session follows the window size ("Same as client area" desktop size). Resize mode is selected in plugin settings (applies to new connections):
+  - Auto (default) - Dynamic, then Reconnect, then SmartSizing
+  - Dynamic - change remote resolution without reconnect (Windows 8.1 / Server 2012 R2 and newer)
+  - Reconnect - reconnect with the new resolution
+  - SmartSizing - scale the image without changing remote resolution
+  - None - do not resize
 - Auto-close window after disconnect (optional)
 - Per-connection credentials (user / password / domain)
+- Import and export of standard Remote Desktop Connection (.rdp) files compatible with mstsc.exe
 - Event model for connection state changes and client updates
 
 ## Download
@@ -32,6 +39,8 @@ To install the RDP Plugin, follow these steps:
 - Edit a client to specify server, credentials and options.
 - Connect to a client by double-clicking or using the context menu.
 - Use configured shortcut keys inside the remote session.
+- Import .rdp files from the Add button drop-down or folder context menu (multiple files supported; file name becomes the client name).
+- Export a client to an .rdp file from the client context menu. A saved password is optionally included, DPAPI encrypted for the current Windows user (same as mstsc.exe).
 
 ## Configuration
 Settings are stored as an embedded XML blob. They are loaded on startup and saved after changes (see `SettingsBll`).

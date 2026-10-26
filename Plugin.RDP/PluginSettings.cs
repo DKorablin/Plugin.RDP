@@ -5,37 +5,60 @@ using System.Drawing.Design;
 using System.Windows.Forms;
 using System.Windows.Forms.Design;
 using Plugin.RDP.Bll;
+using Plugin.RDP.RDP;
 
 namespace Plugin.RDP
 {
 	public class PluginSettings : INotifyPropertyChanged
 	{
+		private static class Defaults
+		{
+			public const Boolean IsThumbnail = false;
+			public const Boolean UseMultipleMonitors = false;
+			public const Boolean CloseWindowAfterDisconnect = true;
+			public const RdpClient.SessionResizeMode ResizeMode = RdpClient.SessionResizeMode.Auto;
+			public const Boolean AutoFillPasswordPrompt = false;
+			public const Boolean EncryptPassword = true;
+			//RDP control hot keys accept only virtual-key code. Modifier is fixed: ALT or CTRL+ALT
+			public const Keys AltTab = Keys.PageUp;
+			public const Keys AltShiftTab = Keys.PageDown;
+			public const Keys AltEsc = Keys.Insert;
+			public const Keys AltSpace = Keys.Delete;
+
+			public const Keys CtrlEsc = Keys.Home;
+			public const Keys CtrlAltDelete = Keys.End;
+
+			public const Keys FullScreen = Keys.Cancel;//CTRL+ALT+BREAK sends VK_CANCEL
+		}
 		private readonly PluginWindows _plugin;
 		private SettingsBll _xmlSettings;
 
-		private Boolean _isThumbnail = false;
-		private Boolean _useMultipleMonitors = false;
-		private Boolean _closeWindowAfterDisconnect = true;
+		private Boolean _isThumbnail = Defaults.IsThumbnail;
+		private Boolean _useMultipleMonitors = Defaults.UseMultipleMonitors;
+		private Boolean _closeWindowAfterDisconnect = Defaults.CloseWindowAfterDisconnect;
+		private RdpClient.SessionResizeMode _resizeMode = Defaults.ResizeMode;
 		private String _user;
 		private String _password;
 		private String _domain;
+		private Boolean _autoFillPasswordPrompt = Defaults.AutoFillPasswordPrompt;
+		private Boolean _encryptPassword = Defaults.EncryptPassword;
 
-		private Keys _altTab = Keys.Alt | Keys.PageUp;
-		private Keys _altShiftTab = Keys.Alt | Keys.PageDown;
-		private Keys _altEsc = Keys.Alt | Keys.Insert;
-		private Keys _altSpace = Keys.Alt | Keys.Delete;
-		private Keys _ctrlEsc = Keys.Alt | Keys.Home;
+		private Keys _altTab = Defaults.AltTab;
+		private Keys _altShiftTab = Defaults.AltShiftTab;
+		private Keys _altEsc = Defaults.AltEsc;
+		private Keys _altSpace = Defaults.AltSpace;
 
-		private Keys _ctrlAltDelete = Keys.Control | Keys.Alt | Keys.End;
-		private Keys _fullScreen = Keys.Control | Keys.Alt | Keys.Pause;
-		private Keys _previousSession = Keys.Control | Keys.Alt | Keys.Left;
-		private Keys _selectSession = Keys.Control | Keys.Alt | Keys.Right;
+		private Keys _ctrlEsc = Defaults.CtrlEsc;
+		private Keys _ctrlAltDelete = Defaults.CtrlAltDelete;
+
+		private Keys _fullScreen = Defaults.FullScreen;
 
 		/// <summary>RDP client settings</summary>
 		internal SettingsBll XmlSettings
 			=> this._xmlSettings ?? (this._xmlSettings = new SettingsBll(this._plugin));
 
 		//TODO: So far it's just a stub
+		[DefaultValue(Defaults.IsThumbnail)]
 		internal Boolean IsThumbnail
 		{
 			get => this._isThumbnail;
@@ -45,7 +68,7 @@ namespace Plugin.RDP
 		[Category("Appearance")]
 		[DisplayName("Use multiple monitors")]
 		[Description("Open Remote Desktop Connection on all monitors")]
-		[DefaultValue(false)]
+		[DefaultValue(Defaults.UseMultipleMonitors)]
 		public Boolean UseMultipleMonitors
 		{
 			get => this._useMultipleMonitors;
@@ -55,11 +78,26 @@ namespace Plugin.RDP
 		[Category("Appearance")]
 		[DisplayName("Close after disconnect")]
 		[Description("Close the connection window after disconnecting from the remote server")]
-		[DefaultValue(true)]
+		[DefaultValue(Defaults.CloseWindowAfterDisconnect)]
 		public Boolean CloseWindowAfterDisconnect
 		{
 			get => this._closeWindowAfterDisconnect;
 			set => this.SetField(ref this._closeWindowAfterDisconnect, value, nameof(this.CloseWindowAfterDisconnect));
+		}
+
+		[Category("Appearance")]
+		[DisplayName("Session resize mode")]
+		[Description(@"How the remote session is fitted into the window when the window is resized (applies to new connections with ""Same as client area"" desktop size):
+Auto - Dynamic, then Reconnect, then SmartSizing
+Dynamic - change remote resolution without reconnect (Windows 8.1 / Server 2012 R2 and newer)
+Reconnect - reconnect with the new resolution
+SmartSizing - scale the image without changing remote resolution
+None - do not resize")]
+		[DefaultValue(Defaults.ResizeMode)]
+		public RdpClient.SessionResizeMode ResizeMode
+		{
+			get => this._resizeMode;
+			set => this.SetField(ref this._resizeMode, value, nameof(this.ResizeMode));
 		}
 
 		#region Credentials
@@ -87,101 +125,110 @@ namespace Plugin.RDP
 			get => this._domain;
 			set => this.SetField(ref this._domain, value, nameof(this.Domain));
 		}
+
+		[Category("Credentials")]
+		[DisplayName("Auto fill password prompt")]
+		[Description(@"Automatically enter the stored connection password into the Windows Security dialog when the server policy requires the password to be entered manually (""Always prompt for password upon connection"").
+The password is entered only once per connection attempt.")]
+		[DefaultValue(Defaults.AutoFillPasswordPrompt)]
+		public Boolean AutoFillPasswordPrompt
+		{
+			get => this._autoFillPasswordPrompt;
+			set => this.SetField(ref this._autoFillPasswordPrompt, value, nameof(this.AutoFillPasswordPrompt));
+		}
+
+		[Category("Credentials")]
+		[DisplayName("Encrypt password")]
+		[Description(@"Store connection passwords in the settings encrypted for the current Windows user (DPAPI).
+Encrypted passwords can't be decrypted by another user or on another computer.")]
+		[DefaultValue(Defaults.EncryptPassword)]
+		public Boolean EncryptPassword
+		{
+			get => this._encryptPassword;
+			set => this.SetField(ref this._encryptPassword, value, nameof(this.EncryptPassword));
+		}
 		#endregion Credentials
 
 		#region ALT hot keys
 		[Category("ALT hot keys")]
 		[DisplayName("ALT+TAB")]
+		[Description("Key that, combined with ALT, sends ALT+TAB to the remote session to switch between programs (default: ALT+PAGE UP)")]
 		[Editor(typeof(ShortcutKeysEditor),typeof(UITypeEditor))]
-		[DefaultValue(Keys.Alt | Keys.PageUp)]
+		[DefaultValue(Defaults.AltTab)]
 		public Keys AltTab
 		{
 			get => this._altTab;
-			set => this.SetField(ref this._altTab, value, nameof(this.AltTab));
+			set => this.SetField(ref this._altTab, value & Keys.KeyCode, nameof(this.AltTab));
 		}
 
 		[Category("ALT hot keys")]
 		[DisplayName("ALT+SHIFT+TAB")]
+		[Description("Key that, combined with ALT, sends ALT+SHIFT+TAB to the remote session to switch between programs in reverse order (default: ALT+PAGE DOWN)")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
-		[DefaultValue(Keys.Alt | Keys.PageDown)]
+		[DefaultValue(Defaults.AltShiftTab)]
 		public Keys AltShiftTab
 		{
 			get => this._altShiftTab;
-			set => this.SetField(ref this._altShiftTab, value, nameof(this.AltShiftTab));
+			set => this.SetField(ref this._altShiftTab, value & Keys.KeyCode, nameof(this.AltShiftTab));
 		}
 
 		[Category("ALT hot keys")]
 		[DisplayName("ALT+ESC")]
+		[Description("Key that, combined with ALT, sends ALT+ESC to the remote session to cycle through programs in the order they were started (default: ALT+INSERT)")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
-		[DefaultValue(Keys.Alt | Keys.Insert)]
+		[DefaultValue(Defaults.AltEsc)]
 		public Keys AltEsc
 		{
 			get => this._altEsc;
-			set => this.SetField(ref this._altEsc, value, nameof(this.AltEsc));
+			set => this.SetField(ref this._altEsc, value & Keys.KeyCode, nameof(this.AltEsc));
 		}
 
 		[Category("ALT hot keys")]
 		[DisplayName("ALT+SPACE")]
+		[Description("Key that, combined with ALT, sends ALT+SPACE to the remote session to open the window system menu (default: ALT+DELETE)")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
-		[DefaultValue(Keys.Alt | Keys.Delete)]
+		[DefaultValue(Defaults.AltSpace)]
 		public Keys AltSpace
 		{
 			get => this._altSpace;
-			set => this.SetField(ref this._altSpace, value, nameof(this.AltSpace));
-		}
-
-		[Category("ALT hot keys")]
-		[DisplayName("CTRL+ESC")]
-		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
-		[DefaultValue(Keys.Alt | Keys.Home)]
-		public Keys CtrlEsc
-		{
-			get => this._ctrlEsc;
-			set => this.SetField(ref this._ctrlEsc, value, nameof(this.CtrlEsc));
+			set => this.SetField(ref this._altSpace, value & Keys.KeyCode, nameof(this.AltSpace));
 		}
 		#endregion ALT hot keys
 
-		#region CTRL+ALT hot keys
-		[Category("CTRL+ALT hot keys")]
-		[DisplayName("CTRL+ALT+DEL")]
+		#region CTRL hot keys
+		[Category("CTRL hot keys")]
+		[DisplayName("CTRL+ESC")]
+		[Description("Key that, combined with ALT, sends CTRL+ESC to the remote session to open the Start menu (default: ALT+HOME)")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
-		[DefaultValue(Keys.Control | Keys.Alt | Keys.End)]
+		[DefaultValue(Defaults.CtrlEsc)]
+		public Keys CtrlEsc
+		{
+			get => this._ctrlEsc;
+			set => this.SetField(ref this._ctrlEsc, value & Keys.KeyCode, nameof(this.CtrlEsc));
+		}
+		
+		[Category("CTRL hot keys")]
+		[DisplayName("CTRL+ALT+DEL")]
+		[Description("Key that, combined with CTRL+ALT, sends CTRL+ALT+DEL to the remote session to open the Windows Security screen (default: CTRL+ALT+END)")]
+		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
+		[DefaultValue(Defaults.CtrlAltDelete)]
 		public Keys CtrlAltDel
 		{
 			get => this._ctrlAltDelete;
-			set => this.SetField(ref this._ctrlAltDelete, value, nameof(this.CtrlAltDel));
+			set => this.SetField(ref this._ctrlAltDelete, value & Keys.KeyCode, nameof(this.CtrlAltDel));
 		}
 
-		[Category("CTRL+ALT hot keys")]
+		[Category("CTRL hot keys")]
 		[DisplayName("Full screen")]
+		[Description("Key that, combined with CTRL+ALT, toggles the remote session between full screen and window mode (default: CTRL+ALT+BREAK)")]
 		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
-		[DefaultValue(Keys.Control | Keys.Alt | Keys.Pause)]
+		[DefaultValue(Defaults.FullScreen)]
 		public Keys FullScreen
 		{
 			get => this._fullScreen;
-			set => this.SetField(ref this._fullScreen, value, nameof(this.FullScreen));
+			set => this.SetField(ref this._fullScreen, value & Keys.KeyCode, nameof(this.FullScreen));
 		}
-
-		[Category("CTRL+ALT hot keys")]
-		[DisplayName("Previous session")]
-		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
-		[DefaultValue(Keys.Control|Keys.Alt|Keys.Left)]
-		public Keys PreviousSession
-		{
-			get => this._previousSession;
-			set => this.SetField(ref this._previousSession, value, nameof(this.PreviousSession));
-		}
-
-		[Category("CTRL+ALT hot keys")]
-		[DisplayName("Select session")]
-		[Editor(typeof(ShortcutKeysEditor), typeof(UITypeEditor))]
-		[DefaultValue(Keys.Control|Keys.Alt|Keys.Right)]
-		public Keys SelectSession
-		{
-			get => this._selectSession;
-			set => this.SetField(ref this._selectSession, value, nameof(this.SelectSession));
-		}
-		#endregion CTRL+ALT hot keys
+		#endregion CTRL hot keys
 
 		internal PluginSettings(PluginWindows plugin)
 			=> this._plugin = plugin;

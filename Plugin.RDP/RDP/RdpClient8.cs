@@ -32,5 +32,12 @@ namespace Plugin.RDP.RDP
 			this._parent.LostFocus();
 			base.OnLostFocus(e);
 		}
+
+		protected override void WndProc(ref Message m)
+		{
+			if(m.Msg == Native.WM_MOUSEACTIVATE && !base.ContainsFocus)
+				base.Focus();
+			base.WndProc(ref m);
+		}
 	}
 }
