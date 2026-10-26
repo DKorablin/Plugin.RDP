@@ -191,6 +191,27 @@ namespace Plugin.RDP.Bll
 				}
 			}
 
+			/// <summary>Get the connection password decrypted for use</summary>
+			/// <returns>Plain text password or null if the password is not stored</returns>
+			/// <exception cref="InvalidOperationException">The password is encrypted by another Windows user or on another computer</exception>
+			public String GetPassword()
+				=> RdpClientRow.GetPlainPassword(this.PasswordI);
+
+			/// <summary>Get the RD Gateway password decrypted for use</summary>
+			/// <returns>Plain text password or empty string if the password is not stored</returns>
+			/// <exception cref="InvalidOperationException">The password is encrypted by another Windows user or on another computer</exception>
+			public String GetGatewayPassword()
+				=> RdpClientRow.GetPlainPassword(this.GatewayPassword);
+
+			private static String GetPlainPassword(String value)
+			{
+				if(!PasswordProtector.IsProtected(value))
+					return value;
+
+				return PasswordProtector.Unprotect(value)
+					?? throw new InvalidOperationException("The stored password was encrypted by another Windows user or on another computer. Please enter the password again.");
+			}
+
 			public String DomainI
 			{
 				get => this.IsDomainNull() ? null : this.Domain;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Data;
 using System.IO;
 using System.Linq;
@@ -35,16 +36,50 @@ namespace Plugin.RDP.Bll
 				}
 				clientRow.Validate();//Errors are not stored in the settings file
 			}
+
+			this._plugin.Settings.PropertyChanged += this.Settings_PropertyChanged;
+		}
+
+		private void Settings_PropertyChanged(Object sender, PropertyChangedEventArgs e)
+		{
+			if(e.PropertyName == nameof(PluginSettings.EncryptPassword))
+				this.Save();//Rewrite stored passwords in the new mode
 		}
 
 		public override void Save()
 		{
+			Boolean encrypt = this._plugin.Settings.EncryptPassword;
+			SettingsDataSet data = (SettingsDataSet)base.DataSet.Copy();//Passwords in memory are used as is
+			foreach(SettingsDataSet.RdpClientRow clientRow in data.RdpClient)
+			{
+				if(!clientRow.IsPasswordNull())
+					clientRow.Password = SettingsBll.ConvertPassword(clientRow.Password, encrypt);
+				if(!clientRow.IsGatewayPasswordNull())
+					clientRow.GatewayPassword = SettingsBll.ConvertPassword(clientRow.GatewayPassword, encrypt);
+			}
+
 			using(MemoryStream stream = new MemoryStream())
 			{
-				base.DataSet.WriteXml(stream);
+				data.WriteXml(stream);
 				this._plugin.HostWindows.Plugins.Settings(this._plugin).SaveAssemblyBlob(Constant.SettingsFileName, stream);
 			}
 			//base.Save();
+		}
+
+		/// <summary>Convert the password to the form it is stored in the settings file</summary>
+		/// <param name="value">Plain text or DPAPI protected password</param>
+		/// <param name="encrypt">Store the password encrypted for the current Windows user</param>
+		/// <returns>The password to store</returns>
+		private static String ConvertPassword(String value, Boolean encrypt)
+		{
+			if(String.IsNullOrEmpty(value))
+				return value;
+
+			Boolean isProtected = PasswordProtector.IsProtected(value);
+			if(encrypt)
+				return isProtected ? value : PasswordProtector.Protect(value);
+			else
+				return isProtected ? PasswordProtector.Unprotect(value) ?? value : value;//Password encrypted by another user is kept as is
 		}
 
 		/// <summary>Event triggered when a connection to a client has been established</summary>

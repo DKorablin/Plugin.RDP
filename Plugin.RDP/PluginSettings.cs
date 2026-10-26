@@ -18,6 +18,7 @@ namespace Plugin.RDP
 			public const Boolean CloseWindowAfterDisconnect = true;
 			public const RdpClient.SessionResizeMode ResizeMode = RdpClient.SessionResizeMode.Auto;
 			public const Boolean AutoFillPasswordPrompt = false;
+			public const Boolean EncryptPassword = true;
 			//RDP control hot keys accept only virtual-key code. Modifier is fixed: ALT or CTRL+ALT
 			public const Keys AltTab = Keys.PageUp;
 			public const Keys AltShiftTab = Keys.PageDown;
@@ -40,6 +41,7 @@ namespace Plugin.RDP
 		private String _password;
 		private String _domain;
 		private Boolean _autoFillPasswordPrompt = Defaults.AutoFillPasswordPrompt;
+		private Boolean _encryptPassword = Defaults.EncryptPassword;
 
 		private Keys _altTab = Defaults.AltTab;
 		private Keys _altShiftTab = Defaults.AltShiftTab;
@@ -133,6 +135,17 @@ The password is entered only once per connection attempt.")]
 		{
 			get => this._autoFillPasswordPrompt;
 			set => this.SetField(ref this._autoFillPasswordPrompt, value, nameof(this.AutoFillPasswordPrompt));
+		}
+
+		[Category("Credentials")]
+		[DisplayName("Encrypt password")]
+		[Description(@"Store connection passwords in the settings encrypted for the current Windows user (DPAPI).
+Encrypted passwords can't be decrypted by another user or on another computer.")]
+		[DefaultValue(Defaults.EncryptPassword)]
+		public Boolean EncryptPassword
+		{
+			get => this._encryptPassword;
+			set => this.SetField(ref this._encryptPassword, value, nameof(this.EncryptPassword));
 		}
 		#endregion Credentials
 

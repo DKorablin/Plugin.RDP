@@ -272,7 +272,7 @@ namespace Plugin.RDP
 				this.RdpClient.MsRdpClient.UserName = this.RdpClientRow.UserName;
 
 			if(!String.IsNullOrEmpty(this.RdpClientRow.PasswordI))
-				this.RdpClient.AdvancedSettings2.ClearTextPassword = this.RdpClientRow.PasswordI;
+				this.RdpClient.AdvancedSettings2.ClearTextPassword = this.RdpClientRow.GetPassword();
 
 			if(!String.IsNullOrEmpty(this.RdpClientRow.DomainI))
 				this.RdpClient.MsRdpClient.Domain = this.RdpClientRow.DomainI;
@@ -403,7 +403,7 @@ namespace Plugin.RDP
 					transportSettings2.GatewayCredSharing = this.RdpClientRow.GatewayShareAuth ? 1u : 0u;
 					transportSettings2.GatewayUsername =this.RdpClientRow.GatewayUserName;
 					transportSettings2.GatewayDomain = this.RdpClientRow.GatewayDomain;
-					transportSettings2.GatewayPassword = this.RdpClientRow.GatewayPassword;
+					transportSettings2.GatewayPassword = this.RdpClientRow.GetGatewayPassword();
 				}
 			} else
 			{
@@ -426,7 +426,7 @@ namespace Plugin.RDP
 
 			if(this._credentialPromptAutoFill == null)
 				this._credentialPromptAutoFill = new CredentialPromptAutoFill(this.Plugin.Trace);
-			this._credentialPromptAutoFill.Start(this.RdpClientRow.UserName, this.RdpClientRow.PasswordI);
+			this._credentialPromptAutoFill.Start(this.RdpClientRow.UserName, this.RdpClientRow.GetPassword());
 		}
 
 		private void RdpClient_OnConnected(Object sender, EventArgs e)
